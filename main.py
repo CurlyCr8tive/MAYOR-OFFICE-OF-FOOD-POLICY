@@ -20,7 +20,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-api-key, anthropic-version')
-        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -85,6 +86,7 @@ def main():
     print(f"  Open the Replit browser panel to view")
     print(f"  Press Ctrl+C to stop\n")
 
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), DashboardHandler) as httpd:
         try:
             httpd.serve_forever()

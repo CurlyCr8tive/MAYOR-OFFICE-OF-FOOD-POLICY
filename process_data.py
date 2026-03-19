@@ -1,43 +1,14 @@
 """
 NYC Food Insecurity Vulnerability Scorer
-=========================================
-Builds a neighborhood-level vulnerability score for each of NYC's
-59 Community Districts using uploaded CCC + NYC EH datasets.
-
-Output: vulnerability_scores.json — ready to plug into your Leaflet map.
-
-Data Sources:
-  - SNAP (Food Stamps).csv           → CCC / HRA (2024)
-  - Citizenship.csv                  → CCC / ACS (2023)
-  - Poverty.csv                      → CCC / ACS (2024)
-  - Rent-burdened_households.csv     → NYC EH Portal (2017-21)
-  - Child_poverty_under_age_5.csv    → NYC EH Portal (2017-21)
-  - Unemployment.csv                 → NYC EH Portal (2017-21)
-
-Scoring Formula (0–100 scale):
-  SNAP household rate       35%  ← primary federal cut exposure
-  Child poverty rate        20%  ← most vulnerable population
-  Rent burden rate          20%  ← zero financial buffer indicator
-  Unemployment rate         15%  ← economic fragility
-  Non-citizen population    10%  ← SNAP eligibility cut risk
+Reads real data from local files and outputs vulnerability_scores.json
 """
 
-import csv
-import json
-import re
-import os
+import csv, io, json, os
+from datetime import datetime
 
-DATA_DIR = "data"
+# ── FIPS lookups ────────────────────────────────────────────────────────────
 
-WEIGHTS = {
-    "snap_pct":         0.35,
-    "child_poverty_pct":0.20,
-    "rent_burden_pct":  0.20,
-    "unemployment_pct": 0.15,
-    "noncitizen_pct":   0.10,
-}
-
-BOROUGH_MAP = {
+BOROUGH_BY_FIPS_PREFIX = {
     "1": "Manhattan",
     "2": "Bronx",
     "3": "Brooklyn",
@@ -45,262 +16,279 @@ BOROUGH_MAP = {
     "5": "Staten Island",
 }
 
+# Canonical CD names keyed by 3-digit FIPS string
+CD_NAMES = {
+    "101": "Battery Park/Tribeca",      "102": "Greenwich Village",
+    "103": "Lower East Side",           "104": "Chelsea/Clinton",
+    "105": "Midtown Business District", "106": "Murray Hill/Stuyvesant",
+    "107": "Upper West Side",           "108": "Upper East Side",
+    "109": "Manhattanville",            "110": "Central Harlem",
+    "111": "East Harlem",               "112": "Washington Heights",
+    "201": "Mott Haven",                "202": "Hunts Point",
+    "203": "Morrisania",                "204": "Concourse/Highbridge",
+    "205": "University Heights",        "206": "East Tremont",
+    "207": "Bedford Park",              "208": "Riverdale",
+    "209": "Unionport/Soundview",       "210": "Throgs Neck",
+    "211": "Pelham Parkway",            "212": "Williamsbridge",
+    "301": "Williamsburg/Greenpoint",   "302": "Fort Greene/Brooklyn Hts",
+    "303": "Bedford Stuyvesant",        "304": "Bushwick",
+    "305": "East New York",             "306": "Park Slope",
+    "307": "Sunset Park",               "308": "Crown Heights North",
+    "309": "Crown Heights South",       "310": "Bay Ridge",
+    "311": "Bensonhurst",               "312": "Borough Park",
+    "313": "Coney Island",              "314": "Flatbush/Midwood",
+    "315": "Sheepshead Bay",            "316": "Brownsville",
+    "317": "East Flatbush",             "318": "Canarsie",
+    "401": "Astoria",                   "402": "Sunnyside/Woodside",
+    "403": "Jackson Heights",           "404": "Elmhurst/Corona",
+    "405": "Ridgewood/Glendale",        "406": "Rego Park/Forest Hills",
+    "407": "Flushing",                  "408": "Fresh Meadows/Briarwood",
+    "409": "Woodhaven",                 "410": "Howard Beach",
+    "411": "Bayside",                   "412": "Jamaica/St. Albans",
+    "413": "Queens Village",            "414": "The Rockaways",
+    "501": "St. George",                "502": "South Beach",
+    "503": "Tottenville",
+}
 
-def clean_number(val):
-    if not val or val.strip() == "":
-        return None
-    val = val.strip().strip('"')
-    val = re.sub(r'\s*\(.*?\)', '', val)
-    val = val.replace(',', '').replace('*', '').replace('%', '')
-    try:
-        return float(val)
-    except ValueError:
-        return None
-
-
-def skip_metadata(reader):
-    for row in reader:
-        if row and row[0].strip().lower() in ("location", "timeperiod"):
-            return row
+# CDTA2020 GeoID → 3-digit FIPS string
+def cdta_to_fips(geoid: str) -> str:
+    n = int(geoid)
+    if 501 <= n <= 512:   return str(n - 300)   # Bronx   201-212
+    if 4701 <= n <= 4718: return str(n - 4400)  # Brooklyn 301-318
+    if 6101 <= n <= 6112: return str(n - 6000)  # Manhattan 101-112
+    if 8101 <= n <= 8114: return str(n - 7700)  # Queens  401-414
+    if 8501 <= n <= 8503: return str(n - 8000)  # Staten Island 501-503
     return None
 
+# Risk tiers
+TIERS = [
+    (70, "Critical", "#d32f2f"),
+    (50, "High",     "#f57c00"),
+    (30, "Moderate", "#f9a825"),
+    (0,  "Lower",    "#388e3c"),
+]
 
-def normalize(values):
-    nums = [v for v in values.values() if v is not None]
-    if not nums:
-        return {k: 0 for k in values}
-    mn, mx = min(nums), max(nums)
-    if mx == mn:
-        return {k: 0.5 for k in values}
-    return {
-        k: (v - mn) / (mx - mn) if v is not None else 0
-        for k, v in values.items()
-    }
+def assign_tier(score: float):
+    for threshold, label, colour in TIERS:
+        if score >= threshold:
+            return label, colour
+    return "Lower", "#388e3c"
 
+# ── CCC file parser ──────────────────────────────────────────────────────────
 
-def parse_ccc_snap(filepath):
-    data = {}
-    borough_fips = {"36005", "36047", "36061", "36081", "36085", "3651000"}
-    with open(filepath, encoding="utf-8-sig", errors="replace") as f:
-        reader = csv.reader(f)
-        skip_metadata(reader)
-        for row in reader:
-            if len(row) < 6:
-                continue
-            location, recipient, timeframe, fmt, value, fips = row[:6]
-            fips = fips.strip().strip('\r')
-            if (timeframe.strip() == "2024"
-                    and recipient.strip() == "Households"
-                    and fmt.strip() == "Percent"
-                    and fips not in borough_fips
-                    and fips.strip().isdigit()
-                    and len(fips.strip()) <= 3):
-                pct = clean_number(value)
-                if pct is not None:
-                    data[fips.strip()] = round(pct * 100, 2)
-    return data
+def parse_ccc(fpath: str) -> list:
+    """Skip HTML metadata block; return rows from the actual data table."""
+    with open(fpath, encoding="utf-8-sig") as f:
+        content = f.read()
+    lines = content.split("\n")
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith("Location,"):
+            start = i
+            break
+    if start is None:
+        raise ValueError(f"No 'Location,' header found in {fpath}")
+    reader = csv.DictReader(io.StringIO("\n".join(lines[start:])))
+    return list(reader)
 
+# ── NYC EH Portal file parser ────────────────────────────────────────────────
 
-def parse_ccc_citizenship(filepath):
-    data = {}
-    borough_fips = {"36005", "36047", "36061", "36081", "36085", "3651000"}
-    with open(filepath, encoding="utf-8-sig", errors="replace") as f:
-        reader = csv.reader(f)
-        skip_metadata(reader)
-        for row in reader:
-            if len(row) < 6:
-                continue
-            location, cit_type, timeframe, fmt, value, fips = row[:6]
-            fips = fips.strip().strip('\r')
-            if (timeframe.strip() == "2023"
-                    and "Non-Citizen" in cit_type
-                    and fmt.strip() == "Percent"
-                    and fips not in borough_fips
-                    and fips.strip().isdigit()
-                    and len(fips.strip()) <= 3):
-                pct = clean_number(value)
-                if pct is not None:
-                    data[fips.strip()] = round(pct * 100, 2)
-    return data
+def parse_eh(fpath: str, geo_type: str = "CDTA2020") -> list:
+    """Return rows where GeoType matches (default CDTA2020)."""
+    with open(fpath, encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    return [r for r in rows if r.get("GeoType", "").strip() == geo_type]
 
+def clean_pct(val: str) -> float:
+    """Strip commas / asterisks / CI intervals and return float."""
+    val = val.split("(")[0].strip().replace(",", "").replace("*", "").strip()
+    return float(val)
 
-def parse_nyc_eh_by_cd(filepath):
-    rows_by_geo = {}
-    with open(filepath, encoding="utf-8-sig", errors="replace") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get("GeoType", "").strip() != "CD":
-                continue
-            geo_id = str(row.get("GeoID", "")).strip()
-            geo_name = row.get("Geography", "").strip()
-            time_period = row.get("TimePeriod", "").strip()
-            pct_raw = row.get("Percent", "").strip()
-            pct = clean_number(pct_raw)
-            if pct is None or geo_id == "":
-                continue
-            if geo_id not in rows_by_geo or time_period > rows_by_geo[geo_id]["time"]:
-                rows_by_geo[geo_id] = {
-                    "time": time_period,
-                    "pct": pct,
-                    "name": geo_name
-                }
-    return {geo_id: v["pct"] for geo_id, v in rows_by_geo.items()}
+# ── Indicator loaders ────────────────────────────────────────────────────────
 
+DATA_DIR = "data"
 
-def build_cd_name_lookup(snap_data_path):
-    lookup = {}
-    borough_fips = {"36005", "36047", "36061", "36081", "36085", "3651000"}
-    with open(snap_data_path, encoding="utf-8-sig", errors="replace") as f:
-        reader = csv.reader(f)
-        skip_metadata(reader)
-        for row in reader:
-            if len(row) < 6:
-                continue
-            location, _, timeframe, fmt, _, fips = row[:6]
-            fips = fips.strip().strip('\r')
-            if (timeframe.strip() == "2024"
-                    and fips not in borough_fips
-                    and fips.strip().isdigit()
-                    and len(fips.strip()) <= 3
-                    and fips.strip() not in lookup):
-                lookup[fips.strip()] = location.strip()
-    return lookup
+def load_snap() -> dict:
+    """SNAP % of individuals (latest year per CD). Returns {fips: pct}."""
+    rows = parse_ccc(os.path.join(DATA_DIR, "SNAP (Food Stamps).csv"))
+    relevant = [
+        r for r in rows
+        if r.get("Recipient", "").strip() == "Individuals"
+        and r.get("DataFormat", "").strip() == "Percent"
+        and len(r.get("Fips", "").strip()) == 3
+    ]
+    by_fips = {}
+    for r in relevant:
+        fips = r["Fips"].strip()
+        year = int(r["TimeFrame"].strip())
+        pct  = float(r["Data"].strip()) * 100  # stored as decimal 0-1
+        if fips not in by_fips or year > by_fips[fips][0]:
+            by_fips[fips] = (year, pct)
+    return {fips: v[1] for fips, v in by_fips.items()}
 
+def load_citizenship() -> dict:
+    """Non-citizen % (latest year per CD). Returns {fips: pct}."""
+    rows = parse_ccc(os.path.join(DATA_DIR, "Citizenship.csv"))
+    relevant = [
+        r for r in rows
+        if r.get("Citizenship Type", "").strip() == "Non-Citizens"
+        and r.get("DataFormat", "").strip() == "Percent"
+        and len(r.get("Fips", "").strip()) == 3
+    ]
+    by_fips = {}
+    for r in relevant:
+        fips = r["Fips"].strip()
+        year = int(r["TimeFrame"].strip())
+        pct  = float(r["Data"].strip()) * 100
+        if fips not in by_fips or year > by_fips[fips][0]:
+            by_fips[fips] = (year, pct)
+    return {fips: v[1] for fips, v in by_fips.items()}
 
-def get_borough(fips):
-    fips = str(fips).strip()
-    if not fips or not fips.isdigit():
-        return "Unknown"
-    first = fips[0]
-    return BOROUGH_MAP.get(first, "Unknown")
+def load_eh_indicator(fname: str) -> dict:
+    """NYC EH Portal CDTA2020 indicator (latest TimePeriod first).
+    Returns {fips: pct}."""
+    rows = parse_eh(os.path.join(DATA_DIR, fname))
+    rows.sort(key=lambda r: r.get("TimePeriod", ""), reverse=True)
+    by_fips = {}
+    for r in rows:
+        fips = cdta_to_fips(r["GeoID"].strip())
+        if fips is None or fips in by_fips:
+            continue
+        try:
+            by_fips[fips] = clean_pct(r["Percent"])
+        except (ValueError, KeyError):
+            continue
+    return by_fips
 
+# ── Scoring ──────────────────────────────────────────────────────────────────
 
-def main():
-    print("NYC Food Insecurity Vulnerability Scorer")
-    print("=" * 50)
+WEIGHTS = {
+    "snap":          0.35,
+    "child_poverty": 0.20,
+    "rent_burden":   0.20,
+    "unemployment":  0.15,
+    "noncitizen":    0.10,
+}
 
-    snap_path        = os.path.join(DATA_DIR, "SNAP (Food Stamps).csv")
-    citizenship_path = os.path.join(DATA_DIR, "Citizenship.csv")
-    rent_path        = os.path.join(DATA_DIR, "NYC_EH_Rent-burdened_households.csv")
-    child_pov_path   = os.path.join(DATA_DIR, "NYC_EH_Child_poverty_under_age_5.csv")
-    unemploy_path    = os.path.join(DATA_DIR, "NYC_EH_Unemployment.csv")
+def minmax_norm(values: list) -> list:
+    lo, hi = min(values), max(values)
+    if hi == lo:
+        return [0.5] * len(values)
+    return [(v - lo) / (hi - lo) for v in values]
 
-    print("\nLoading datasets...")
+def score_districts() -> dict:
+    print("Loading SNAP data …")
+    snap      = load_snap()
+    print("Loading citizenship data …")
+    citizen   = load_citizenship()
+    print("Loading child poverty data …")
+    child_pov = load_eh_indicator("NYC_EH_Child_poverty_under_age_5.csv")
+    print("Loading rent burden data …")
+    rent      = load_eh_indicator("NYC_EH_Rent-burdened_households.csv")
+    print("Loading unemployment data …")
+    unemp     = load_eh_indicator("NYC_EH_Unemployment.csv")
 
-    snap        = parse_ccc_snap(snap_path)
-    citizenship = parse_ccc_citizenship(citizenship_path)
-    rent_burden = parse_nyc_eh_by_cd(rent_path)
-    child_pov   = parse_nyc_eh_by_cd(child_pov_path)
-    unemployment= parse_nyc_eh_by_cd(unemploy_path)
-    cd_names    = build_cd_name_lookup(snap_path)
+    all_fips = sorted(CD_NAMES.keys())
 
-    print(f"  SNAP data:          {len(snap)} community districts")
-    print(f"  Citizenship data:   {len(citizenship)} community districts")
-    print(f"  Rent burden data:   {len(rent_burden)} community districts")
-    print(f"  Child poverty data: {len(child_pov)} community districts")
-    print(f"  Unemployment data:  {len(unemployment)} community districts")
+    # Compute city-wide means as fallback for missing CDs
+    def mean(d): return sum(d.values()) / len(d) if d else 0
+    snap_mean   = mean(snap)
+    cp_mean     = mean(child_pov)
+    rent_mean   = mean(rent)
+    unemp_mean  = mean(unemp)
+    noncit_mean = mean(citizen)
 
-    print("\nBuilding raw indicators per community district...")
+    def safe(d, fips, fallback):
+        return d.get(fips, fallback)
 
-    all_fips = set(snap.keys())
+    snap_vals   = [safe(snap,      f, snap_mean)   for f in all_fips]
+    cp_vals     = [safe(child_pov, f, cp_mean)     for f in all_fips]
+    rent_vals   = [safe(rent,      f, rent_mean)   for f in all_fips]
+    unemp_vals  = [safe(unemp,     f, unemp_mean)  for f in all_fips]
+    noncit_vals = [safe(citizen,   f, noncit_mean) for f in all_fips]
 
-    raw = {}
-    for fips in all_fips:
-        cd_id = str(fips).zfill(3)
-        raw[fips] = {
-            "fips":              fips,
-            "cd_name":           cd_names.get(fips, f"CD {fips}"),
-            "borough":           get_borough(fips),
-            "snap_pct":          snap.get(fips),
-            "noncitizen_pct":    citizenship.get(fips),
-            "rent_burden_pct":   rent_burden.get(fips) or rent_burden.get(cd_id),
-            "child_poverty_pct": child_pov.get(fips) or child_pov.get(cd_id),
-            "unemployment_pct":  unemployment.get(fips) or unemployment.get(cd_id),
-        }
+    # Min-max normalise across all 59 CDs
+    snap_n   = minmax_norm(snap_vals)
+    cp_n     = minmax_norm(cp_vals)
+    rent_n   = minmax_norm(rent_vals)
+    unemp_n  = minmax_norm(unemp_vals)
+    noncit_n = minmax_norm(noncit_vals)
 
-    print("Normalizing indicators...")
+    districts = []
+    for i, fips in enumerate(all_fips):
+        borough = BOROUGH_BY_FIPS_PREFIX[fips[0]]
+        cd_name = CD_NAMES[fips]
 
-    for indicator in WEIGHTS.keys():
-        raw_vals = {fips: d[indicator] for fips, d in raw.items()}
-        normed   = normalize(raw_vals)
-        for fips in raw:
-            raw[fips][f"{indicator}_norm"] = normed[fips]
+        raw = (
+            snap_n[i]   * WEIGHTS["snap"]          +
+            cp_n[i]     * WEIGHTS["child_poverty"] +
+            rent_n[i]   * WEIGHTS["rent_burden"]   +
+            unemp_n[i]  * WEIGHTS["unemployment"]  +
+            noncit_n[i] * WEIGHTS["noncitizen"]
+        ) * 100
 
-    print("Computing vulnerability scores...")
+        score        = round(raw, 1)
+        tier, colour = assign_tier(score)
 
-    results = []
-    for fips, d in raw.items():
-        score = sum(
-            d.get(f"{ind}_norm", 0) * weight
-            for ind, weight in WEIGHTS.items()
-        )
-        score_100 = round(score * 100, 1)
-
-        if score_100 >= 70:
-            tier = "Critical"
-            color = "#d32f2f"
-        elif score_100 >= 50:
-            tier = "High"
-            color = "#f57c00"
-        elif score_100 >= 30:
-            tier = "Moderate"
-            color = "#fbc02d"
-        else:
-            tier = "Lower"
-            color = "#388e3c"
-
-        results.append({
-            "fips":              fips,
-            "cd_name":           d["cd_name"],
-            "borough":           d["borough"],
-            "vulnerability_score": score_100,
-            "risk_tier":         tier,
-            "color":             color,
+        districts.append({
+            "fips":                fips,
+            "cd_name":             cd_name,
+            "borough":             borough,
+            "vulnerability_score": score,
+            "risk_tier":           tier,
+            "color":               colour,
             "indicators": {
-                "snap_household_pct":    d["snap_pct"],
-                "child_poverty_pct":     d["child_poverty_pct"],
-                "rent_burden_pct":       d["rent_burden_pct"],
-                "unemployment_pct":      d["unemployment_pct"],
-                "noncitizen_pct":        d["noncitizen_pct"],
-            }
+                "snap_household_pct": round(snap_vals[i],   2),
+                "child_poverty_pct":  round(cp_vals[i],     1),
+                "rent_burden_pct":    round(rent_vals[i],   1),
+                "unemployment_pct":   round(unemp_vals[i],  1),
+                "noncitizen_pct":     round(noncit_vals[i], 2),
+            },
         })
 
-    results.sort(key=lambda x: x["vulnerability_score"], reverse=True)
+    districts.sort(key=lambda d: d["vulnerability_score"], reverse=True)
 
-    print("\nTOP 15 MOST VULNERABLE COMMUNITY DISTRICTS")
-    print("-" * 65)
-    print(f"{'Rank':<5} {'Community District':<28} {'Borough':<14} {'Score':<8} {'Tier'}")
-    print("-" * 65)
-    for i, r in enumerate(results[:15], 1):
-        print(f"{i:<5} {r['cd_name']:<28} {r['borough']:<14} {r['vulnerability_score']:<8} {r['risk_tier']}")
+    critical_count = sum(1 for d in districts if d["risk_tier"] == "Critical")
+    high_count     = sum(1 for d in districts if d["risk_tier"] == "High")
 
-    output = {
+    return {
         "metadata": {
-            "description": "NYC Food Insecurity Vulnerability Score by Community District",
+            "description":     "NYC Food Insecurity Vulnerability Score by Community District",
+            "generated":       datetime.now().isoformat(timespec="seconds"),
             "scoring_weights": WEIGHTS,
             "data_sources": {
-                "snap":          "NYC HRA via CCC, 2024",
-                "citizenship":   "ACS via CCC, 2023",
-                "rent_burden":   "NYC EH Portal, 2017-21",
-                "child_poverty": "NYC EH Portal, 2017-21",
-                "unemployment":  "NYC EH Portal, 2017-21",
+                "snap":          "NYC HRA via CCC — latest year per district",
+                "citizenship":   "ACS via CCC — latest year per district",
+                "rent_burden":   "NYC EH Portal, CDTA2020 — latest 5-year period",
+                "child_poverty": "NYC EH Portal, CDTA2020 — latest 5-year period",
+                "unemployment":  "NYC EH Portal, CDTA2020 — latest 5-year period",
             },
-            "total_districts": len(results),
-            "critical_count":  sum(1 for r in results if r["risk_tier"] == "Critical"),
-            "high_count":      sum(1 for r in results if r["risk_tier"] == "High"),
+            "total_districts": len(districts),
+            "critical_count":  critical_count,
+            "high_count":      high_count,
         },
-        "districts": results
+        "districts": districts,
     }
 
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    output   = score_districts()
     out_path = "vulnerability_scores.json"
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"\nDone! Output saved to: {out_path}")
-    print(f"   {len(results)} community districts scored")
-    print(f"   {output['metadata']['critical_count']} Critical risk")
-    print(f"   {output['metadata']['high_count']} High risk")
-
-
-if __name__ == "__main__":
-    main()
+    meta = output["metadata"]
+    print(f"\nWrote {out_path}")
+    print(f"  {meta['total_districts']} districts scored")
+    print(f"  Critical: {meta['critical_count']}")
+    print(f"  High:     {meta['high_count']}")
+    print("\nTop 5 most vulnerable:")
+    for d in output["districts"][:5]:
+        ind = d["indicators"]
+        print(f"  {d['fips']}  {d['cd_name']:30s}  score={d['vulnerability_score']}  [{d['risk_tier']}]")
+        print(f"       SNAP={ind['snap_household_pct']:.1f}%  "
+              f"ChildPov={ind['child_poverty_pct']:.1f}%  "
+              f"Rent={ind['rent_burden_pct']:.1f}%  "
+              f"Unemp={ind['unemployment_pct']:.1f}%  "
+              f"NonCit={ind['noncitizen_pct']:.1f}%")

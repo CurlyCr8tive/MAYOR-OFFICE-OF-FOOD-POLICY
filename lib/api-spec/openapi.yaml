@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NYC Food Insecurity Vulnerability Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: districts
+    description: Vulnerability district data
 paths:
   /healthz:
     get:
@@ -24,6 +26,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /districts:
+    get:
+      operationId: getDistricts
+      tags: [districts]
+      summary: Get all vulnerability districts
+      description: Returns all 59 NYC community districts with vulnerability scores
+      responses:
+        "200":
+          description: Districts data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DistrictsResponse"
+  /districts/{fips}:
+    get:
+      operationId: getDistrict
+      tags: [districts]
+      summary: Get a single district
+      parameters:
+        - name: fips
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: District data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/District"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +66,81 @@ components:
           type: string
       required:
         - status
-
+    DistrictIndicators:
+      type: object
+      properties:
+        snap_household_pct:
+          type: number
+          nullable: true
+        child_poverty_pct:
+          type: number
+          nullable: true
+        rent_burden_pct:
+          type: number
+          nullable: true
+        unemployment_pct:
+          type: number
+          nullable: true
+        noncitizen_pct:
+          type: number
+          nullable: true
+      required:
+        - snap_household_pct
+        - child_poverty_pct
+        - rent_burden_pct
+        - unemployment_pct
+        - noncitizen_pct
+    District:
+      type: object
+      properties:
+        fips:
+          type: string
+        cd_name:
+          type: string
+        borough:
+          type: string
+        vulnerability_score:
+          type: number
+        risk_tier:
+          type: string
+          enum: [Critical, High, Moderate, Lower]
+        color:
+          type: string
+        indicators:
+          $ref: "#/components/schemas/DistrictIndicators"
+      required:
+        - fips
+        - cd_name
+        - borough
+        - vulnerability_score
+        - risk_tier
+        - color
+        - indicators
+    DistrictsMetadata:
+      type: object
+      properties:
+        description:
+          type: string
+        total_districts:
+          type: integer
+        critical_count:
+          type: integer
+        high_count:
+          type: integer
+      required:
+        - description
+        - total_districts
+        - critical_count
+        - high_count
+    DistrictsResponse:
+      type: object
+      properties:
+        metadata:
+          $ref: "#/components/schemas/DistrictsMetadata"
+        districts:
+          type: array
+          items:
+            $ref: "#/components/schemas/District"
+      required:
+        - metadata
+        - districts

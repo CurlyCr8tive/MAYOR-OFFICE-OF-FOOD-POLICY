@@ -1,0 +1,22 @@
+packages:
+  "react-leaflet": "React components for Leaflet maps"
+  "leaflet": "Interactive maps library"
+  "@types/leaflet": "TypeScript definitions for Leaflet"
+  "recharts": "Data visualization for district indicators and sparklines"
+  "framer-motion": "Animations for the dashboard components and chat"
+  "date-fns": "Formatting dates and times"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility function to efficiently merge Tailwind CSS classes"
+
+images:
+  - path: "artifacts/nyc-food-dashboard/public/images/avatar-ai.png"
+    description: "Minimalist futuristic AI assistant glowing blue wireframe avatar icon on dark background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/nyc-food-dashboard/public/images/nyc-seal.png"
+    description: "Futuristic monochrome glowing subtle NYC government seal watermark logo"
+    aspect_ratio: "1:1"
+
+notes:
+  - "The dashboard relies on external NYC GeoJSON from githubusercontent"
+  - "Using CartoDB Dark Matter tile layer for the map base to fit the civic tech dark theme"
+  - "The API client hooks and schemas are imported from @workspace/api-client-react"

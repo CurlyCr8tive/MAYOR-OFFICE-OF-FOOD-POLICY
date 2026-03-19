@@ -23,6 +23,7 @@ Setup:
 """
 
 import requests
+import urllib.parse
 import json
 import os
 import shutil
@@ -51,10 +52,18 @@ COMPLAINTS_SPIKE        = 10    # 311 complaints per community board per day
 
 # NYC Open Data dataset IDs
 DATASETS = {
+    # ── Publicly accessible (no government login required) ──
+    "complaints_311":       "erm2-nwe9",  # 311 Service Requests — public, very large
+
+    # ── Require HRA government account login (403 without it) ──
+    # These are HRA internal datasets not available via app token alone.
+    # To enable: obtain HRA data access at https://data.cityofnewyork.us
     "snap_by_district":     "jye8-w4d7",  # SNAP Population by Community District
     "cash_assistance":      "kjcq-h8d9",  # Cash Assistance by Community District
+
+    # ── Dataset IDs not yet verified on public portal ──
+    # Replace with correct IDs if found at data.cityofnewyork.us
     "cfc_utilization":      "unw5-rvbq",  # CFC Pantry Meals & Individuals Served
-    "complaints_311":       "erm2-nwe9",  # 311 Service Requests
     "pantry_locations":     "54h5-vbp4",  # Community Food Connection Locations
     "benefits_screening":   "kvhd-5fxi",  # NYC Benefits Screening (SNAP eligibility)
 }
@@ -73,13 +82,29 @@ def api_get(dataset_id, params={}):
     """
     Generic Socrata API fetch for any NYC Open Data dataset.
     Returns list of records or empty list on failure.
+
+    Builds the query string manually to preserve Socrata's literal
+    $ and $$ prefixes (requests.get(params=...) encodes $ as %24,
+    which breaks SoQL parameter names like $limit and $$app_token).
     """
-    url = f"{BASE_URL}/{dataset_id}.json"
+    all_params = dict(params)
     if NYC_TOKEN:
-        params["$$app_token"] = NYC_TOKEN
+        all_params["$$app_token"] = NYC_TOKEN
+
+    # Keep $ unencoded in parameter NAMES; encode values normally
+    qs_parts = []
+    for k, v in all_params.items():
+        encoded_key = urllib.parse.quote(str(k), safe="$")
+        encoded_val = urllib.parse.quote(str(v), safe="")
+        qs_parts.append(f"{encoded_key}={encoded_val}")
+    qs = "&".join(qs_parts)
+
+    url = f"{BASE_URL}/{dataset_id}.json"
+    if qs:
+        url = f"{url}?{qs}"
 
     try:
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.Timeout:
@@ -176,12 +201,15 @@ def fetch_311_food_complaints():
     """
     Daily — 311 food-related complaints in last 24 hours.
     Early warning indicator — spikes precede formal data by weeks.
-    Filters to food-specific complaint types only.
+
+    Fetches raw records (no server-side $group — that query times out
+    on this multi-million-row dataset). Aggregation happens in Python
+    via aggregate_311_complaints().
     """
     print("  Fetching 311 food complaints (last 24 hours)...")
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%dT00:00:00')
 
-    # Build OR filter for all food-related complaint types
+    # OR filter for food-related complaint types only
     type_filter = " OR ".join(
         f"complaint_type='{ct}'" for ct in FOOD_COMPLAINT_TYPES
     )
@@ -189,13 +217,35 @@ def fetch_311_food_complaints():
 
     data = api_get(DATASETS["complaints_311"], {
         "$where": where_clause,
-        "$select": "community_board, borough, complaint_type, count(*) as count",
-        "$group": "community_board, borough, complaint_type",
-        "$order": "count DESC",
-        "$limit": "500",
+        "$select": "community_board, borough, complaint_type, created_date",
+        "$order": "created_date DESC",
+        "$limit": "1000",
     })
-    print(f"     -> {len(data)} community board complaint groups returned")
+    print(f"     -> {len(data)} raw complaint records returned")
     return data
+
+
+def aggregate_311_complaints(raw_records):
+    """
+    Aggregate raw 311 complaint records by (community_board, borough, complaint_type).
+    Returns list of dicts matching the old grouped-query shape:
+      [{"community_board": "...", "borough": "...", "complaint_type": "...", "count": N}, ...]
+    """
+    counts = {}
+    for row in raw_records:
+        cb  = row.get("community_board", "").strip()
+        bor = row.get("borough", "").strip()
+        ct  = row.get("complaint_type", "").strip()
+        key = (cb, bor, ct)
+        counts[key] = counts.get(key, 0) + 1
+
+    aggregated = [
+        {"community_board": k[0], "borough": k[1], "complaint_type": k[2], "count": v}
+        for k, v in counts.items()
+    ]
+    # Sort descending by count
+    aggregated.sort(key=lambda x: x["count"], reverse=True)
+    return aggregated
 
 
 # ── ALERT DETECTORS ───────────────────────────────────────────────────────────
@@ -601,13 +651,17 @@ def log_success(msg):
 def daily_refresh():
     """
     Runs every day at 7:00 AM.
-    Pulls 311 complaints — fastest-moving leading indicator.
+    Pulls 311 food complaints (raw records), aggregates in Python,
+    then checks for community-board-level spikes.
     """
     print(f"\nDAILY REFRESH — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print("=" * 50)
 
-    complaints = fetch_311_food_complaints()
-    alerts     = check_311_spikes(complaints)
+    raw        = fetch_311_food_complaints()
+    complaints = aggregate_311_complaints(raw)
+    print(f"     -> aggregated into {len(complaints)} community board groups")
+
+    alerts = check_311_spikes(complaints)
 
     if alerts:
         ai = generate_ai_analysis(alerts)
@@ -617,8 +671,9 @@ def daily_refresh():
         log_success("No 311 spikes detected")
 
     log_event("DAILY_REFRESH", f"Completed — {len(alerts)} alerts", {
-        "complaints_checked": len(complaints),
-        "alerts_generated":   len(alerts),
+        "raw_complaints":      len(raw),
+        "complaint_groups":    len(complaints),
+        "alerts_generated":    len(alerts),
     })
     print(f"  Daily refresh complete\n")
 
@@ -783,18 +838,23 @@ def test_connection():
     """Test that all NYC Open Data API datasets are reachable and token works."""
     print("\nTesting NYC Open Data API connection...")
 
+    # Only test with a simple $limit — no $group (times out on large datasets)
     test_datasets = [
-        ("snap_by_district",   "SNAP by district (monthly)"),
-        ("cash_assistance",    "Cash assistance (monthly)"),
-        ("complaints_311",     "311 complaints (daily)"),
-        ("cfc_utilization",    "CFC pantry utilization (quarterly)"),
-        ("pantry_locations",   "Pantry locations (quarterly)"),
-        ("benefits_screening", "Benefits screening (quarterly)"),
+        ("complaints_311",     "311 food complaints (daily)          [public]"),
+        ("snap_by_district",   "SNAP by district (monthly)           [requires HRA login]"),
+        ("cash_assistance",    "Cash assistance (monthly)            [requires HRA login]"),
+        ("cfc_utilization",    "CFC pantry utilization (quarterly)   [ID unverified]"),
+        ("pantry_locations",   "Pantry locations (quarterly)         [ID unverified]"),
+        ("benefits_screening", "Benefits screening (quarterly)       [ID unverified]"),
     ]
 
     for key, label in test_datasets:
-        data = api_get(DATASETS[key], {"$limit": "2"})
-        status = f"OK — {len(data)} records" if data else "FAILED — 0 records"
+        data = api_get(DATASETS[key], {
+            "$limit": "1",
+            "$select": "created_date" if key == "complaints_311" else "",
+            "$where": "complaint_type='Food Establishment'" if key == "complaints_311" else "",
+        })
+        status = f"OK — reachable" if data else "UNAVAILABLE"
         print(f"  [{status}] {label} ({DATASETS[key]})")
 
     print()

@@ -1,5 +1,123 @@
 [
   {
+    "timestamp": "2026-03-19T21:27:32.264787",
+    "type": "DAILY_REFRESH",
+    "message": "Completed \u2014 0 alerts",
+    "data": {
+      "raw_complaints": 1,
+      "complaint_groups": 1,
+      "alerts_generated": 0
+    }
+  },
+  {
+    "timestamp": "2026-03-19T21:27:32.263127",
+    "type": "SUCCESS",
+    "message": "No 311 spikes detected",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:27:20.491618",
+    "type": "ERROR",
+    "message": "HTTP error fetching kvhd-5fxi: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/kvhd-5fxi.json?$limit=1&$select=&$where=&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:27:20.348376",
+    "type": "ERROR",
+    "message": "HTTP error fetching 54h5-vbp4: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/54h5-vbp4.json?$limit=1&$select=&$where=&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:27:20.200895",
+    "type": "ERROR",
+    "message": "HTTP error fetching unw5-rvbq: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/unw5-rvbq.json?$limit=1&$select=&$where=&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:27:20.040555",
+    "type": "ERROR",
+    "message": "HTTP error fetching kjcq-h8d9: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/kjcq-h8d9.json?$limit=1&$select=&$where=&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:27:19.882742",
+    "type": "ERROR",
+    "message": "HTTP error fetching jye8-w4d7: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/jye8-w4d7.json?$limit=1&$select=&$where=&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:47.719650",
+    "type": "ERROR",
+    "message": "HTTP error fetching kvhd-5fxi: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/kvhd-5fxi.json?$limit=2&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:47.556847",
+    "type": "ERROR",
+    "message": "HTTP error fetching 54h5-vbp4: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/54h5-vbp4.json?$limit=2&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:47.415702",
+    "type": "ERROR",
+    "message": "HTTP error fetching unw5-rvbq: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/unw5-rvbq.json?$limit=2&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:47.257388",
+    "type": "ERROR",
+    "message": "Timeout fetching dataset erm2-nwe9",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:17.138627",
+    "type": "ERROR",
+    "message": "HTTP error fetching kjcq-h8d9: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/kjcq-h8d9.json?$limit=2&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:22:16.984676",
+    "type": "ERROR",
+    "message": "HTTP error fetching jye8-w4d7: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/jye8-w4d7.json?$limit=2&$$app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:21:20.155938",
+    "type": "ERROR",
+    "message": "HTTP error fetching kvhd-5fxi: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/kvhd-5fxi.json?%24limit=2&%24%24app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:21:20.030187",
+    "type": "ERROR",
+    "message": "HTTP error fetching 54h5-vbp4: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/54h5-vbp4.json?%24limit=2&%24%24app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:21:19.901551",
+    "type": "ERROR",
+    "message": "HTTP error fetching unw5-rvbq: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/unw5-rvbq.json?%24limit=2&%24%24app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:21:19.773369",
+    "type": "ERROR",
+    "message": "Timeout fetching dataset erm2-nwe9",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:20:49.672194",
+    "type": "ERROR",
+    "message": "HTTP error fetching kjcq-h8d9: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/kjcq-h8d9.json?%24limit=2&%24%24app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:20:49.539664",
+    "type": "ERROR",
+    "message": "HTTP error fetching jye8-w4d7: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/jye8-w4d7.json?%24limit=2&%24%24app_token=rSg1iC3Dyl9aSyZ9I88nhX7DP",
+    "data": null
+  },
+  {
     "timestamp": "2026-03-19T21:07:02.340357",
     "type": "ERROR",
     "message": "HTTP error fetching kvhd-5fxi: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/kvhd-5fxi.json?%24limit=2",

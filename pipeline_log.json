@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2026-03-19T21:07:02.340357",
+    "type": "ERROR",
+    "message": "HTTP error fetching kvhd-5fxi: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/kvhd-5fxi.json?%24limit=2",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:07:02.180103",
+    "type": "ERROR",
+    "message": "HTTP error fetching 54h5-vbp4: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/54h5-vbp4.json?%24limit=2",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:07:02.041756",
+    "type": "ERROR",
+    "message": "HTTP error fetching unw5-rvbq: 404 Client Error: Not Found for url: https://data.cityofnewyork.us/resource/unw5-rvbq.json?%24limit=2",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:07:01.900182",
+    "type": "ERROR",
+    "message": "Timeout fetching dataset erm2-nwe9",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:06:31.773322",
+    "type": "ERROR",
+    "message": "HTTP error fetching kjcq-h8d9: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/kjcq-h8d9.json?%24limit=2",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-19T21:06:31.567151",
+    "type": "ERROR",
+    "message": "HTTP error fetching jye8-w4d7: 403 Client Error: Forbidden for url: https://data.cityofnewyork.us/resource/jye8-w4d7.json?%24limit=2",
+    "data": null
+  }
+]

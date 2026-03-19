@@ -51,12 +51,20 @@ COMPLAINTS_SPIKE        = 10    # 311 complaints per community board per day
 
 # NYC Open Data dataset IDs
 DATASETS = {
-    "snap_by_district":  "jye8-w4d7",  # SNAP Population by Community District
-    "cash_assistance":   "kjcq-h8d9",  # Cash Assistance by Community District
-    "cfc_utilization":   "unw5-rvbq",  # CFC Pantry Meals & Individuals Served
-    "complaints_311":    "erm2-nwe9",  # 311 Service Requests
-    "pantry_locations":  "54h5-vbp4",  # Community Food Connection Locations
+    "snap_by_district":     "jye8-w4d7",  # SNAP Population by Community District
+    "cash_assistance":      "kjcq-h8d9",  # Cash Assistance by Community District
+    "cfc_utilization":      "unw5-rvbq",  # CFC Pantry Meals & Individuals Served
+    "complaints_311":       "erm2-nwe9",  # 311 Service Requests
+    "pantry_locations":     "54h5-vbp4",  # Community Food Connection Locations
+    "benefits_screening":   "kvhd-5fxi",  # NYC Benefits Screening (SNAP eligibility)
 }
+
+# Food-related 311 complaint types to monitor
+FOOD_COMPLAINT_TYPES = [
+    "Food Establishment",
+    "Food Poisoning",
+    "Food Safety",
+]
 
 
 # ── API FETCHERS ──────────────────────────────────────────────────────────────
@@ -91,12 +99,14 @@ def api_get(dataset_id, params={}):
 def fetch_snap_by_district():
     """
     Monthly — SNAP enrollment by community district.
-    Returns most recent month's data for all 59 CDs.
+    Returns most recent two months per district so surge detection
+    can compare month-over-month.
     """
     print("  Fetching SNAP enrollment by district...")
     data = api_get(DATASETS["snap_by_district"], {
+        "$select": "community_district, snap_individuals, snap_households, month_year",
         "$order": "month_year DESC",
-        "$limit": "200",
+        "$limit": "200",  # ~59 districts × 3 months of buffer
     })
     print(f"     -> {len(data)} records returned")
     return data
@@ -106,11 +116,12 @@ def fetch_cash_assistance():
     """
     Monthly — Cash assistance recipients by community district.
     Proxy indicator for households with zero income buffer.
+    One record per CD for the most recent month.
     """
     print("  Fetching cash assistance data...")
     data = api_get(DATASETS["cash_assistance"], {
         "$order": "month_year DESC",
-        "$limit": "100",
+        "$limit": "59",  # one per community district
     })
     print(f"     -> {len(data)} records returned")
     return data
@@ -123,6 +134,7 @@ def fetch_pantry_utilization():
     """
     print("  Fetching pantry utilization data...")
     data = api_get(DATASETS["cfc_utilization"], {
+        "$select": "borough, community_district, individuals_served, meals_served, quarter",
         "$order": "quarter DESC",
         "$limit": "500",
     })
@@ -145,20 +157,42 @@ def fetch_pantry_locations():
     return data
 
 
+def fetch_benefits_screening():
+    """
+    Quarterly — NYC Benefits Screening eligibility data.
+    Tracks SNAP eligibility rule changes that affect program access
+    across all 40+ city/state/federal programs.
+    """
+    print("  Fetching SNAP benefits screening data...")
+    data = api_get(DATASETS["benefits_screening"], {
+        "$where": "program_name='SNAP'",
+        "$limit": "500",
+    })
+    print(f"     -> {len(data)} SNAP eligibility records returned")
+    return data
+
+
 def fetch_311_food_complaints():
     """
-    Daily — 311 complaints related to food in last 24 hours.
+    Daily — 311 food-related complaints in last 24 hours.
     Early warning indicator — spikes precede formal data by weeks.
+    Filters to food-specific complaint types only.
     """
     print("  Fetching 311 food complaints (last 24 hours)...")
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%dT00:00:00')
+
+    # Build OR filter for all food-related complaint types
+    type_filter = " OR ".join(
+        f"complaint_type='{ct}'" for ct in FOOD_COMPLAINT_TYPES
+    )
+    where_clause = f"({type_filter}) AND created_date > '{yesterday}'"
+
     data = api_get(DATASETS["complaints_311"], {
-        "$where": f"created_date > '{yesterday}'",
+        "$where": where_clause,
         "$select": "community_board, borough, complaint_type, count(*) as count",
         "$group": "community_board, borough, complaint_type",
-        "$having": "count(*) > 0",
         "$order": "count DESC",
-        "$limit": "200",
+        "$limit": "500",
     })
     print(f"     -> {len(data)} community board complaint groups returned")
     return data
@@ -289,6 +323,44 @@ def check_snap_surge(snap_data):
                     "timestamp":       datetime.now().isoformat(),
                 })
         except (ValueError, TypeError, ZeroDivisionError):
+            continue
+
+    return alerts
+
+
+def check_benefits_screening(screening_data):
+    """
+    Detect changes in SNAP eligibility rules that could affect enrollment.
+    Flags any records where eligibility criteria have changed.
+    """
+    alerts = []
+    if not screening_data:
+        return alerts
+
+    for record in screening_data:
+        try:
+            program = record.get("program_name", "")
+            if "SNAP" not in program.upper():
+                continue
+
+            # Look for key eligibility fields that signal rule changes
+            eligibility_change = record.get("eligibility_change", "")
+            effective_date     = record.get("effective_date", "")
+            description        = record.get("description", record.get("program_description", ""))
+
+            if eligibility_change and eligibility_change.strip():
+                alerts.append({
+                    "type":             "ELIGIBILITY_CHANGE",
+                    "severity":         "High",
+                    "district":         "Citywide",
+                    "borough":          "All",
+                    "program":          program,
+                    "effective_date":   effective_date,
+                    "description":      str(description)[:200],
+                    "message":          f"SNAP eligibility rule change: {str(eligibility_change)[:100]}",
+                    "timestamp":        datetime.now().isoformat(),
+                })
+        except Exception:
             continue
 
     return alerts
@@ -594,21 +666,23 @@ def monthly_refresh():
 def quarterly_refresh():
     """
     Runs every 90 days at 9:00 AM.
-    Pulls pantry utilization, checks capacity stress,
-    compares scores to baseline, updates pantry map layer,
-    then resets the baseline.
+    Pulls pantry utilization + locations, SNAP benefits screening data,
+    checks capacity stress and eligibility changes, compares scores to
+    baseline, updates pantry map layer, then resets the baseline.
     """
     print(f"\nQUARTERLY REFRESH — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print("=" * 50)
 
-    # Fetch
-    pantry_util  = fetch_pantry_utilization()
-    pantry_locs  = fetch_pantry_locations()
+    # Fetch all quarterly sources
+    pantry_util   = fetch_pantry_utilization()
+    pantry_locs   = fetch_pantry_locations()
+    screening     = fetch_benefits_screening()
 
-    # Detect alerts
-    capacity_alerts = check_pantry_capacity(pantry_util)
-    score_alerts    = check_score_changes()
-    all_alerts      = capacity_alerts + score_alerts
+    # Detect alerts from each source
+    capacity_alerts    = check_pantry_capacity(pantry_util)
+    score_alerts       = check_score_changes()
+    screening_alerts   = check_benefits_screening(screening)
+    all_alerts         = capacity_alerts + score_alerts + screening_alerts
 
     if all_alerts:
         ai = generate_ai_analysis(all_alerts)
@@ -616,6 +690,7 @@ def quarterly_refresh():
         print(f"  {len(all_alerts)} quarterly alerts generated")
         print(f"     -> {len(capacity_alerts)} pantry capacity alerts")
         print(f"     -> {len(score_alerts)} score change alerts")
+        print(f"     -> {len(screening_alerts)} SNAP eligibility alerts")
     else:
         log_success("No significant changes detected this quarter")
 
@@ -623,28 +698,56 @@ def quarterly_refresh():
     if pantry_locs:
         save_pantry_locations(pantry_locs)
 
+    # Log screening summary even if no change alerts triggered
+    if screening:
+        log_info(f"Benefits screening: {len(screening)} SNAP records reviewed")
+
     # Reset baseline to current scores
     if os.path.exists(CURRENT_FILE):
         shutil.copy(CURRENT_FILE, BASELINE_FILE)
         log_success(f"Baseline updated -> {BASELINE_FILE}")
 
     log_event("QUARTERLY_REFRESH", f"Completed — {len(all_alerts)} alerts", {
-        "pantry_util_records": len(pantry_util),
-        "pantry_locations":    len(pantry_locs),
-        "alerts_generated":    len(all_alerts),
+        "pantry_util_records":  len(pantry_util),
+        "pantry_locations":     len(pantry_locs),
+        "screening_records":    len(screening),
+        "alerts_generated":     len(all_alerts),
     })
     print(f"  Quarterly refresh complete\n")
 
 
 # ── SCHEDULER ─────────────────────────────────────────────────────────────────
 
+def run_monthly_if_first():
+    """
+    Wrapper: only executes monthly_refresh on the 1st of each month.
+    schedule library doesn't support monthly natively, so we check
+    the date manually inside a daily job.
+    """
+    if datetime.now().day == 1:
+        monthly_refresh()
+
+
+def run_quarterly_if_due():
+    """
+    Wrapper: only executes quarterly_refresh on the 1st of Jan/Apr/Jul/Oct.
+    """
+    now = datetime.now()
+    if now.day == 1 and now.month in (1, 4, 7, 10):
+        quarterly_refresh()
+
+
 def run_scheduler():
     """
     Sets up and runs the cron-style scheduler.
-    Runs all refreshes once on startup, then on schedule.
+
+    Schedule:
+      07:00 daily   — 311 food complaints (leading indicator)
+      08:00 daily   — monthly trigger fires only on the 1st of each month
+      09:00 daily   — quarterly trigger fires only on Jan/Apr/Jul/Oct 1st
 
     For Replit free tier: this process must stay running.
-    Consider Replit Always On or deploy to Railway/Render.
+    Consider Replit Always On or deploy to Railway/Render for 24/7 uptime.
     """
     print("NYC Food Insecurity Alert Pipeline — Starting")
     print("=" * 50)
@@ -652,18 +755,21 @@ def run_scheduler():
     print(f"  Anthropic API key:   {'Set' if ANTHROPIC_KEY else 'Missing — AI analysis disabled'}")
     print()
 
-    # Schedule
+    # Daily at 07:00 — 311 complaints
     schedule.every().day.at("07:00").do(daily_refresh)
-    schedule.every(30).days.do(monthly_refresh)
-    schedule.every(90).days.do(quarterly_refresh)
+    # Daily at 08:00 — monthly check (self-gates to 1st of month)
+    schedule.every().day.at("08:00").do(run_monthly_if_first)
+    # Daily at 09:00 — quarterly check (self-gates to Jan/Apr/Jul/Oct 1st)
+    schedule.every().day.at("09:00").do(run_quarterly_if_due)
 
-    # Run all once immediately on startup
-    print("Running initial refresh on startup...")
+    # Run daily refresh immediately on startup so alerts are fresh
+    print("Running initial daily refresh on startup...")
     daily_refresh()
-    monthly_refresh()
-    quarterly_refresh()
 
     print("Scheduler active — checking every 60 seconds")
+    print("  Daily    : 07:00 every day")
+    print("  Monthly  : 08:00 on the 1st of each month")
+    print("  Quarterly: 09:00 on Jan/Apr/Jul/Oct 1st")
     print("Press Ctrl+C to stop\n")
 
     while True:
@@ -674,30 +780,39 @@ def run_scheduler():
 # ── API CONNECTION TEST ───────────────────────────────────────────────────────
 
 def test_connection():
-    """Test that NYC Open Data API is reachable and token works."""
+    """Test that all NYC Open Data API datasets are reachable and token works."""
     print("\nTesting NYC Open Data API connection...")
-    data = api_get(DATASETS["snap_by_district"], {"$limit": "3"})
-    if data:
-        print(f"  Connected — got {len(data)} test records")
-        print(f"  Sample: {json.dumps(data[0], indent=4)}")
-    else:
-        print("  Connection failed — check token and internet")
 
+    test_datasets = [
+        ("snap_by_district",   "SNAP by district (monthly)"),
+        ("cash_assistance",    "Cash assistance (monthly)"),
+        ("complaints_311",     "311 complaints (daily)"),
+        ("cfc_utilization",    "CFC pantry utilization (quarterly)"),
+        ("pantry_locations",   "Pantry locations (quarterly)"),
+        ("benefits_screening", "Benefits screening (quarterly)"),
+    ]
+
+    for key, label in test_datasets:
+        data = api_get(DATASETS[key], {"$limit": "2"})
+        status = f"OK — {len(data)} records" if data else "FAILED — 0 records"
+        print(f"  [{status}] {label} ({DATASETS[key]})")
+
+    print()
     if ANTHROPIC_KEY:
-        print("\nTesting Anthropic API connection...")
+        print("Testing Anthropic API connection...")
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
             msg = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=30,
-                messages=[{"role":"user","content":"Reply with: API connected"}]
+                messages=[{"role": "user", "content": "Reply with: API connected"}]
             )
             print(f"  Claude: {msg.content[0].text}")
         except Exception as e:
             print(f"  Anthropic error: {e}")
     else:
-        print("\n  ANTHROPIC_API_KEY not set — skipping AI test")
+        print("  ANTHROPIC_API_KEY not set — skipping AI test")
 
 
 # ── ENTRY POINT ───────────────────────────────────────────────────────────────

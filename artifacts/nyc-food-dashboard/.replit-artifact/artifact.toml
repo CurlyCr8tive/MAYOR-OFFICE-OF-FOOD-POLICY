@@ -15,11 +15,11 @@ paths = [ "/" ]
 localPort = 23883
 
 [services.development]
-run = "pnpm --filter @workspace/nyc-food-dashboard run dev"
+run = "python3 /home/runner/workspace/main.py"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/nyc-food-dashboard", "run", "build" ]
-publicDir = "artifacts/nyc-food-dashboard/dist/public"
+build = [ ]
+publicDir = "."
 serve = "static"
 
 [[services.production.rewrites]]

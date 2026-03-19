@@ -1,0 +1,55 @@
+Please improve the readability and UX of index.html without 
+changing the overall layout, color scheme, or structure.
+Make only these specific changes:
+
+TYPOGRAPHY:
+- Increase base font size from 12px to 13px globally
+- Increase district names in the sidebar list from 12px to 13px
+- Increase borough subtitle under district name from 10px to 11px
+- Increase risk badge font from 8px to 10px
+- Increase score number in district list from 13px to 14px
+- Increase section labels from 9px to 11px (NEIGHBORHOOD RISK 
+  RANKING, DISTRICT DETAIL, ACTIVE ALERTS, etc.)
+- Increase stat card values from 20px to 24px
+- Increase stat card labels from 9px to 11px
+- Increase all indicator bar labels from 10px to 12px
+- Increase indicator percentages from 10px to 12px
+- Increase alert card text from 10px to 12px
+- Increase AI chat message text from 11px to 13px
+- Increase AI quick action button text from 9px to 11px
+
+SPACING:
+- Increase district list item padding from 9px 14px to 11px 14px
+- Increase stat card padding from 8px 10px to 12px 12px
+- Increase alert card padding from 7px 10px to 10px 12px
+- Increase gap between district rank, name and score to 12px
+- Add 2px more margin-bottom to each indicator row
+
+SIDEBAR:
+- Increase sidebar width from 280px to 300px
+- Make the search bar height slightly taller: padding 9px 10px
+
+MAP ELEMENTS:
+- Increase map header text from 9px to 11px
+- Increase map timestamp text from 9px to 11px
+- Increase legend title from 9px to 11px
+- Increase legend item text from 10px to 12px
+- Increase tooltip font from 10px to 12px in the Leaflet 
+  tooltip CSS override
+
+BOTTOM PANELS:
+- Increase panel title text from 9px to 11px
+- Trend label from 9px to 11px
+
+RIGHT AI PANEL:
+- Increase AI panel width from 320px to 340px
+- Increase ai-name font from 11px to 13px
+- Increase ai-subtitle from 9px to 11px
+- Increase chip button text from 9px to 11px
+- Increase quick action label from 9px to 11px
+- Increase chat input placeholder and typed text from 11px to 13px
+
+Do not change any colors, layout structure, grid proportions 
+(beyond the small sidebar/AI panel width adjustments), 
+animations, or functionality. Only change font sizes, 
+padding, and spacing as listed above.

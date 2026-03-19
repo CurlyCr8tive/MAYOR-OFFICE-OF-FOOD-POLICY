@@ -1,0 +1,84 @@
+Every NYC Open Data dataset has a free API endpoint. The Socrata API provides rich query functionality through the Socrata Query Language (SoQL), which borrows heavily from SQL. NYC Open Data You don't need to download files manually — you hit a URL and get fresh JSON back every time.
+The pattern is always:
+https://data.cityofnewyork.us/resource/{DATASET_ID}.json?$query=YOUR_QUERY
+You get an app token for free at data.cityofnewyork.us — without an application token, SODA limits the number of requests you can make, but with one you get up to 1,000 requests per hour. Medium
+
+Your Three Refresh Tiers — Exactly What to Pull and How
+
+🔴 Daily Refresh
+Source: NYC 311 Food-Related Complaints
+
+Dataset ID: erm2-nwe9
+What it tells you: spikes in food emergency calls by neighborhood — a leading indicator of acute need before SNAP data catches up
+API call:
+
+pythonimport requests
+from datetime import datetime, timedelta
+
+yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%dT00:00:00')
+
+url = "https://data.cityofnewyork.us/resource/erm2-nwe9.json"
+params = {
+    "$where": f"complaint_type='Food Establishment' AND created_date > '{yesterday}'",
+    "$select": "community_board, borough, complaint_type, count(*) as count",
+    "$group": "community_board, borough, complaint_type",
+    "$limit": "500",
+    "$$app_token": "YOUR_APP_TOKEN"
+}
+response = requests.get(url, params=params)
+data = response.json()
+
+🟡 Monthly Refresh
+Source 1: SNAP Population by Community District
+
+Dataset ID: jye8-w4d7
+What it tells you: enrollment changes month over month — your primary vulnerability signal
+
+pythonurl = "https://data.cityofnewyork.us/resource/jye8-w4d7.json"
+params = {
+    "$select": "community_district, snap_individuals, snap_households, month_year",
+    "$order": "month_year DESC",
+    "$limit": "100",
+    "$$app_token": "YOUR_APP_TOKEN"
+}
+Source 2: HRA SNAP Monthly Facts
+
+Not on NYC Open Data directly — pull as PDF from nyc.gov/site/hra/about/facts.page
+For your build: scrape the monthly PDF link and parse it, or manually update monthly
+Simpler alternative: use the NYC Open Data SNAP dataset above which updates monthly
+
+Source 3: Cash Assistance Population
+
+Dataset ID: kjcq-h8d9
+Tracks households receiving cash assistance — another food insecurity proxy
+
+pythonurl = "https://data.cityofnewyork.us/resource/kjcq-h8d9.json"
+params = {
+    "$order": "month_year DESC",
+    "$limit": "59",  # one per community district
+    "$$app_token": "YOUR_APP_TOKEN"
+}
+
+🟢 Quarterly Refresh
+Source 1: CFC Food Pantry & Soup Kitchen Utilization
+
+Dataset ID: unw5-rvbq
+What it tells you: meals served and individuals served per pantry site — your capacity stress indicator
+
+pythonurl = "https://data.cityofnewyork.us/resource/unw5-rvbq.json"
+params = {
+    "$select": "borough, community_district, individuals_served, meals_served, quarter",
+    "$order": "quarter DESC",
+    "$limit": "500",
+    "$$app_token": "YOUR_APP_TOKEN"
+}
+Source 2: NYC Benefits Screening API
+
+Screens for 40+ federal, state, and city programs including SNAP, Cash Assistance, WIC, and HEAP. Updated quarterly, eligibility criteria maintained by NYC Opportunity. City of New York
+Use this to track how eligibility rule changes affect your neighborhoods
+
+pythonurl = "https://data.cityofnewyork.us/resource/kvhd-5fxi.json"
+params = {
+    "$where": "program_name='SNAP'",
+    "$$app_token": "YOUR_APP_TOKEN"
+}

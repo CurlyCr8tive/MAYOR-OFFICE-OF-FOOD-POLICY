@@ -1374,19 +1374,18 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const response = await fetch('/api/claude', {
+    const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 400,
-        system: SYSTEM_PROMPT,
-        messages: chatHistory
+        messages: chatHistory,
+        district: selectedDistrict?.cd_name || null
       })
     });
 
     const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Unable to process request.';
+    if (data.error) throw new Error(data.error);
+    const reply = data.response || 'Unable to process request.';
     removeTyping();
     chatHistory.push({ role: 'assistant', content: reply });
     addMessage('ai', reply.replace(/\n/g, '<br>').replace(/→/g, '<span style="color:#ff4d1c">→</span>'));

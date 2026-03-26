@@ -797,6 +797,127 @@ html, body {
   color: var(--text-dim) !important;
   font-size: 8px !important;
 }
+
+/* ── PDF EXPORT BUTTON ──────────────────────────────────────────────────────── */
+.export-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid #ff4d1c;
+  color: #ff4d1c;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+.export-btn:hover { background: #ff4d1c; color: #fff; }
+
+/* ── PRINT / PDF STYLES ─────────────────────────────────────────────────────── */
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff !important; }
+  #app, header, #sidebar, #main-map, #ai-panel, .bottom-panels { display: none !important; }
+  #print-report { display: block !important; }
+}
+#print-report {
+  display: none;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  color: #111;
+  padding: 40px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+#print-report .pr-header {
+  border-bottom: 3px solid #111;
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+#print-report .pr-agency {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #555;
+}
+#print-report .pr-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 6px 0 2px;
+}
+#print-report .pr-meta {
+  font-size: 10px;
+  color: #777;
+}
+#print-report .pr-score-block {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: #f5f5f5;
+  border-left: 5px solid #d32f2f;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+#print-report .pr-score-block.tier-High { border-color: #f57c00; }
+#print-report .pr-score-block.tier-Moderate { border-color: #f9a825; }
+#print-report .pr-score-block.tier-Lower { border-color: #388e3c; }
+#print-report .pr-score-num { font-size: 48px; font-weight: 700; line-height: 1; }
+#print-report .pr-score-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; }
+#print-report .pr-tier-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border-radius: 3px;
+  margin-top: 4px;
+}
+#print-report .pr-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+  margin: 24px 0 12px;
+}
+#print-report .pr-indicator-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+#print-report .pr-indicator-val { font-weight: 700; }
+#print-report .pr-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: #e0e0e0;
+  margin: 0 12px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+#print-report .pr-bar-fill { height: 100%; background: #d32f2f; border-radius: 3px; }
+#print-report .pr-memo {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 16px 20px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+#print-report .pr-footer {
+  margin-top: 40px;
+  font-size: 9px;
+  color: #999;
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
 </style>
 </head>
 <body>
@@ -932,11 +1053,15 @@ html, body {
           <button class="qa-btn" onclick="sendChip('Find the neighborhoods with the worst pantry resource gaps')">🗺️ Resource Gaps</button>
           <button class="qa-btn" onclick="sendChip('Which populations are most at risk from eligibility changes?')">👥 At-Risk Groups</button>
         </div>
+        <button class="export-btn" onclick="exportPDF()">⬇ EXPORT DISTRICT BRIEF AS PDF</button>
       </div>
     </aside>
 
   </div>
 </div>
+
+<!-- PRINT REPORT — hidden on screen, shown only when printing -->
+<div id="print-report"></div>
 
 <script>
 // ── REAL DATA (from vulnerability_scores.json) ────────────────────────────────
@@ -1390,7 +1515,14 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: chatHistory,
-        district: selectedDistrict?.cd_name || null
+        district: selectedDistrict?.cd_name || null,
+        districtData: selectedDistrict ? {
+          name:               selectedDistrict.cd_name,
+          borough:            selectedDistrict.borough,
+          vulnerability_score: selectedDistrict.vulnerability_score,
+          risk_tier:          selectedDistrict.risk_tier,
+          indicators:         selectedDistrict.indicators
+        } : null
       })
     });
 
@@ -1428,6 +1560,75 @@ function initChat() {
     🟠 10 High risk districts<br>
     ⚠️ Federal SNAP cuts: $186B reduction incoming<br><br>
     Ask me about any neighborhood, policy impact, or request a report.`, false);
+}
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────────
+function exportPDF() {
+  const d = selectedDistrict;
+  if (!d) {
+    alert('Please select a district first by clicking a neighborhood on the map or list.');
+    return;
+  }
+
+  const ind = d.indicators;
+  const tierColors = { Critical: '#d32f2f', High: '#f57c00', Moderate: '#f9a825', Lower: '#388e3c' };
+  const tierColor  = tierColors[d.risk_tier] || '#555';
+
+  // Grab last AI message text (strip HTML tags for clean print)
+  const aiMsgs = document.querySelectorAll('.msg-ai .msg-bubble');
+  const lastAI = aiMsgs.length
+    ? aiMsgs[aiMsgs.length - 1].innerText
+    : 'No AI analysis generated yet. Use the AI assistant to generate a policy memo, then export.';
+
+  const indicators = [
+    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%' },
+    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%' },
+    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%' },
+    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%' },
+    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%' },
+  ];
+
+  const indRows = indicators.map(i => `
+    <div class="pr-indicator-row">
+      <span>${i.label} <span style="color:#999;font-size:10px">(${i.weight})</span></span>
+      <div class="pr-bar-bg">
+        <div class="pr-bar-fill" style="width:${Math.min(i.val, 100)}%;background:${tierColor}"></div>
+      </div>
+      <span class="pr-indicator-val">${i.val}%</span>
+    </div>`).join('');
+
+  document.getElementById('print-report').innerHTML = `
+    <div class="pr-header">
+      <div class="pr-agency">NYC Mayor's Office of Food Policy · Community District Report</div>
+      <div class="pr-title">${d.cd_name}, ${d.borough}</div>
+      <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · NYC Food Insecurity Vulnerability Dashboard</div>
+    </div>
+
+    <div class="pr-score-block tier-${d.risk_tier}">
+      <div>
+        <div class="pr-score-label">Vulnerability Score</div>
+        <div class="pr-score-num">${d.vulnerability_score}</div>
+      </div>
+      <div>
+        <div class="pr-score-label">Risk Tier</div>
+        <div class="pr-tier-badge" style="background:${tierColor};color:#fff">${d.risk_tier.toUpperCase()}</div>
+        <div class="pr-score-label" style="margin-top:8px">Community District ${d.fips}</div>
+      </div>
+    </div>
+
+    <div class="pr-section-title">Vulnerability Indicators</div>
+    ${indRows}
+
+    <div class="pr-section-title">AI Policy Analysis</div>
+    <div class="pr-memo">${lastAI}</div>
+
+    <div class="pr-footer">
+      <span>NYC Mayor's Office of Food Policy · Food Insecurity Vulnerability Dashboard</span>
+      <span>Confidential — Pre-decisional · ${new Date().toLocaleDateString()}</span>
+    </div>
+  `;
+
+  window.print();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────

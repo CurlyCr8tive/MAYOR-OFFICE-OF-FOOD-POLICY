@@ -76,16 +76,32 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             payload = json.loads(body)
-            messages = payload.get("messages", [])
-            district = payload.get("district")
+            messages     = payload.get("messages", [])
+            district     = payload.get("district")
+            district_data = payload.get("districtData")
 
             if not messages:
                 self._json_response(400, {"error": "messages array is required"})
                 return
 
-            # Optionally inject district context into the system prompt
+            # Inject full live indicator data so Claude cites real numbers
             system = SYSTEM_PROMPT
-            if district:
+            if district_data:
+                ind = district_data.get("indicators", {})
+                system += (
+                    f" CURRENTLY SELECTED DISTRICT: {district_data.get('name')} "
+                    f"({district_data.get('borough')}). "
+                    f"Vulnerability Score: {district_data.get('vulnerability_score')} "
+                    f"— {district_data.get('risk_tier')} tier. "
+                    f"Live indicators: "
+                    f"SNAP enrollment {ind.get('snap_household_pct')}%, "
+                    f"Child poverty {ind.get('child_poverty_pct')}%, "
+                    f"Rent burden {ind.get('rent_burden_pct')}%, "
+                    f"Unemployment {ind.get('unemployment_pct')}%, "
+                    f"Non-citizen population {ind.get('noncitizen_pct')}%. "
+                    f"Always cite these exact numbers when discussing this district."
+                )
+            elif district:
                 system += f" The user is currently viewing data for: {district}."
 
             # Call Anthropic using urllib (anthropic package not always importable

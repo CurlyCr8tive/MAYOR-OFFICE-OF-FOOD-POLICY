@@ -798,6 +798,28 @@ html, body {
   font-size: 8px !important;
 }
 
+/* ── FORMAT SELECTOR ────────────────────────────────────────────────────────── */
+.format-selector { margin-bottom: 10px; }
+.format-btns { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.fmt-btn {
+  flex: 1;
+  min-width: 70px;
+  padding: 5px 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  text-align: center;
+}
+.fmt-btn:hover { border-color: var(--accent); color: var(--accent); }
+.fmt-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* ── PDF EXPORT BUTTON ──────────────────────────────────────────────────────── */
 .export-btn {
   width: 100%;
@@ -1046,6 +1068,15 @@ html, body {
       </div>
 
       <div class="quick-actions">
+        <div class="format-selector">
+          <div class="qa-title">RESPONSE FORMAT</div>
+          <div class="format-btns">
+            <button class="fmt-btn active" id="fmt-Memo"     onclick="setFormat('Memo',this)">Policy Memo</button>
+            <button class="fmt-btn"        id="fmt-Briefing" onclick="setFormat('Briefing',this)">Briefing</button>
+            <button class="fmt-btn"        id="fmt-Bullets"  onclick="setFormat('Bullets',this)">Bullets</button>
+            <button class="fmt-btn"        id="fmt-Data"     onclick="setFormat('Data',this)">Data</button>
+          </div>
+        </div>
         <div class="qa-title">AI QUICK ACTIONS</div>
         <div class="qa-grid">
           <button class="qa-btn" onclick="sendChip('Generate a policy memo for the top 3 critical districts')">📋 Policy Memo</button>
@@ -1168,8 +1199,33 @@ const PANTRIES = [
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let selectedDistrict = null;
-let currentFilter = 'All';
+let currentFilter    = 'All';
+let currentFormat    = 'Memo';
 let map;
+
+// ── FORMAT SELECTOR ────────────────────────────────────────────────────────────
+function setFormat(fmt, btn) {
+  currentFormat = fmt;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── DERIVED CONTEXT DATA ───────────────────────────────────────────────────────
+// Top 10 most vulnerable districts for ranking context (DISTRICTS is pre-sorted)
+const TOP10_DISTRICTS = DISTRICTS.slice(0, 10).map((d, i) => ({
+  name:    d.cd_name,
+  borough: d.borough,
+  score:   d.vulnerability_score,
+  tier:    d.risk_tier,
+  rank:    i + 1,
+}));
+
+// Pantry coverage grouped by area name
+const PANTRY_COVERAGE = (() => {
+  const counts = {};
+  PANTRIES.forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+  return Object.entries(counts).map(([name, count]) => ({ name, count }));
+})();
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────────
 function updateClock() {
@@ -1507,22 +1563,32 @@ async function sendMessage() {
 
   addMessage('user', text);
   chatHistory.push({ role: 'user', content: text });
+  saveHistory();
   showTyping();
 
   try {
+    // Compute selected district rank (1-based position in sorted DISTRICTS array)
+    const districtRank = selectedDistrict
+      ? DISTRICTS.findIndex(d => d.fips === selectedDistrict.fips) + 1
+      : null;
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: chatHistory,
-        district: selectedDistrict?.cd_name || null,
-        districtData: selectedDistrict ? {
-          name:               selectedDistrict.cd_name,
-          borough:            selectedDistrict.borough,
+        messages:       chatHistory,
+        responseFormat: currentFormat,
+        top10Districts: TOP10_DISTRICTS,
+        pantryData:     PANTRY_COVERAGE,
+        district:       selectedDistrict?.cd_name || null,
+        districtData:   selectedDistrict ? {
+          name:                selectedDistrict.cd_name,
+          borough:             selectedDistrict.borough,
+          rank:                districtRank,
           vulnerability_score: selectedDistrict.vulnerability_score,
-          risk_tier:          selectedDistrict.risk_tier,
-          indicators:         selectedDistrict.indicators
-        } : null
+          risk_tier:           selectedDistrict.risk_tier,
+          indicators:          selectedDistrict.indicators,
+        } : null,
       })
     });
 
@@ -1531,6 +1597,7 @@ async function sendMessage() {
     const reply = data.response || 'Unable to process request.';
     removeTyping();
     chatHistory.push({ role: 'assistant', content: reply });
+    saveHistory();
     addMessage('ai', reply.replace(/\n/g, '<br>').replace(/→/g, '<span style="color:#ff4d1c">→</span>'));
   } catch (err) {
     removeTyping();
@@ -1552,14 +1619,63 @@ function sendChip(text) {
   sendMessage();
 }
 
+// ── SESSION MEMORY (localStorage) ─────────────────────────────────────────────
+const HISTORY_KEY = 'nyc_food_chat_history';
+const MAX_HISTORY = 40; // keep last 40 messages to avoid stale sessions
+
+function saveHistory() {
+  try {
+    const trimmed = chatHistory.slice(-MAX_HISTORY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch(e) {}
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function clearHistory() {
+  chatHistory = [];
+  localStorage.removeItem(HISTORY_KEY);
+  document.getElementById('chat-messages').innerHTML = '';
+  initChat();
+}
+
 // ── INITIAL MESSAGES ──────────────────────────────────────────────────────────
 function initChat() {
-  addMessage('ai', `Dashboard loaded. I'm monitoring <span style="color:#ff4d1c">59 community districts</span> across NYC.<br><br>
-    <strong>Current status:</strong><br>
-    🔴 8 Critical districts — concentrated in the Bronx<br>
-    🟠 10 High risk districts<br>
-    ⚠️ Federal SNAP cuts: $186B reduction incoming<br><br>
-    Ask me about any neighborhood, policy impact, or request a report.`, false);
+  const saved = loadHistory();
+
+  if (saved.length > 0) {
+    // Restore previous session
+    chatHistory = saved;
+    const turnCount = saved.filter(m => m.role === 'user').length;
+    addMessage('ai',
+      `Session restored — ${turnCount} previous exchange${turnCount !== 1 ? 's' : ''} loaded.<br>` +
+      `<span style="color:var(--text-dim);font-size:10px">` +
+      `<span onclick="clearHistory()" style="cursor:pointer;text-decoration:underline">Clear history</span> to start fresh.</span>`,
+      false);
+    // Re-render the full conversation
+    saved.forEach(m => {
+      if (m.role === 'user') {
+        addMessage('user', m.content, false);
+      } else {
+        addMessage('ai',
+          m.content.replace(/\n/g, '<br>').replace(/→/g, '<span style="color:#ff4d1c">→</span>'),
+          false);
+      }
+    });
+  } else {
+    // Fresh session
+    addMessage('ai', `Dashboard loaded. I'm monitoring <span style="color:#ff4d1c">59 community districts</span> across NYC.<br><br>
+      <strong>Current status:</strong><br>
+      🔴 8 Critical districts — concentrated in the Bronx<br>
+      🟠 10 High risk districts<br>
+      ⚠️ Federal SNAP cuts: $186B reduction incoming<br><br>
+      Ask me about any neighborhood, policy impact, or request a report.`, false);
+  }
 }
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────

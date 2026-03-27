@@ -17,27 +17,58 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 SYSTEM_PROMPT = (
     "You are an AI food policy analyst for the NYC Mayor's Office of Food Policy. "
-    "You have access to vulnerability data for all 59 NYC community districts. "
-    "8 Critical districts are all in the Bronx except Brownsville Brooklyn. "
-    "Top critical: University Heights 91.2, Morrisania 88.6, Mott Haven 87.5, "
-    "East Tremont 86.4, Hunts Point 84.6. "
+    "You have access to live vulnerability data for all 59 NYC community districts. "
     "Federal context: $186B SNAP cuts incoming, 1.8M NYC SNAP recipients at risk, "
-    "work requirements March 2026. "
-    "Pantry gaps: East Tremont 2.1 per 10k, Brownsville 2.4 per 10k, "
-    "Hunts Point 2.8 per 10k. "
-    "Format recommendations with → arrows. "
-    "Follow these rules strictly: "
-    "1. When asked about a specific district, always lead with that district's exact vulnerability score and its key indicators (SNAP %, child poverty %, rent burden %, unemployment %, non-citizen %). "
-    "2. When asked about pantry gaps, always cite specific numbers (pantries per 10k residents) for the affected districts. "
-    "3. When asked to generate a policy memo, format it exactly as: "
-    "SUBJECT: [topic] | PRIORITY LEVEL: [Critical/High/Moderate] | "
-    "KEY FINDINGS: three bullet points | "
-    "RECOMMENDED ACTIONS: numbered list | "
-    "ESTIMATED IMPACT: one sentence. "
-    "4. When asked about SNAP cuts, always cite the $186B figure and the March 2026 work requirement deadline explicitly. "
-    "5. Always end every response with a line starting 'TODAY:' followed by one concrete next step the planner can take immediately. "
-    "6. Keep all responses under 150 words."
+    "SNAP work requirements effective March 2026. "
+    "Always format recommendations with → arrows. "
+    "Rules: "
+    "1. When discussing a specific district, always lead with its exact vulnerability score, "
+    "rank out of 59, risk tier, and all five live indicators "
+    "(SNAP %, child poverty %, rent burden %, unemployment %, non-citizen %). "
+    "2. When discussing pantry gaps, cite the pantry count and coverage for affected areas "
+    "using the pantry data provided in context. "
+    "3. When discussing SNAP cuts, always cite the $186B figure and March 2026 deadline. "
+    "4. Always end every response with a line starting 'TODAY:' followed by one concrete "
+    "next step the planner can take immediately. "
+    "5. Aim for 300-400 words for thorough, complete analysis. "
+    "Do not truncate findings or recommendations."
 )
+
+# Per-format output instructions injected alongside the system prompt
+FORMAT_INSTRUCTIONS = {
+    "Memo": (
+        "OUTPUT FORMAT — Policy Memo: "
+        "Structure your response exactly as: "
+        "SUBJECT: [topic]\n"
+        "PRIORITY LEVEL: [Critical / High / Moderate]\n"
+        "KEY FINDINGS:\n• [finding 1]\n• [finding 2]\n• [finding 3]\n"
+        "RECOMMENDED ACTIONS:\n1. [action]\n2. [action]\n3. [action]\n"
+        "ESTIMATED IMPACT: [one sentence]\n"
+        "TODAY: [one immediate next step]"
+    ),
+    "Briefing": (
+        "OUTPUT FORMAT — Executive Briefing: "
+        "Write in flowing prose. Open with a one-sentence situation summary, "
+        "then 3-4 paragraphs: (1) data context and current indicators, "
+        "(2) risk factors and contributing dynamics, "
+        "(3) recommended interventions with rationale, "
+        "(4) timeline and resource implications. End with TODAY: action."
+    ),
+    "Bullets": (
+        "OUTPUT FORMAT — Bullet Points: "
+        "Use only bullet points. No prose paragraphs. "
+        "Lead with district score and rank. "
+        "Use → for key findings, ◆ for recommended actions, ⚠ for risks. "
+        "End with TODAY: action."
+    ),
+    "Data": (
+        "OUTPUT FORMAT — Data Summary: "
+        "Present all information in a structured, numbers-first format. "
+        "Include: indicator values vs city average, district rank, "
+        "year-over-year trend direction, and comparison to similar districts. "
+        "Minimal narrative — let the numbers lead. End with TODAY: action."
+    ),
+}
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
@@ -76,42 +107,67 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             payload = json.loads(body)
-            messages     = payload.get("messages", [])
-            district     = payload.get("district")
-            district_data = payload.get("districtData")
+            messages       = payload.get("messages", [])
+            district       = payload.get("district")
+            district_data  = payload.get("districtData")
+            top10          = payload.get("top10Districts", [])
+            pantry_data    = payload.get("pantryData", [])
+            response_fmt   = payload.get("responseFormat", "Memo")
 
             if not messages:
                 self._json_response(400, {"error": "messages array is required"})
                 return
 
-            # Inject full live indicator data so Claude cites real numbers
+            # ── Build system context ──────────────────────────────────────────
             system = SYSTEM_PROMPT
+
+            # 1. Selected district — full live indicators
             if district_data:
                 ind = district_data.get("indicators", {})
                 system += (
-                    f" CURRENTLY SELECTED DISTRICT: {district_data.get('name')} "
-                    f"({district_data.get('borough')}). "
+                    f"\n\nCURRENTLY SELECTED DISTRICT: {district_data.get('name')} "
+                    f"({district_data.get('borough')}) — "
+                    f"Rank #{district_data.get('rank', '?')} of 59. "
                     f"Vulnerability Score: {district_data.get('vulnerability_score')} "
-                    f"— {district_data.get('risk_tier')} tier. "
+                    f"({district_data.get('risk_tier')} tier). "
                     f"Live indicators: "
                     f"SNAP enrollment {ind.get('snap_household_pct')}%, "
                     f"Child poverty {ind.get('child_poverty_pct')}%, "
                     f"Rent burden {ind.get('rent_burden_pct')}%, "
                     f"Unemployment {ind.get('unemployment_pct')}%, "
-                    f"Non-citizen population {ind.get('noncitizen_pct')}%. "
+                    f"Non-citizen pop {ind.get('noncitizen_pct')}%. "
                     f"Always cite these exact numbers when discussing this district."
                 )
             elif district:
-                system += f" The user is currently viewing data for: {district}."
+                system += f"\n\nThe user is currently viewing: {district}."
 
-            # Call Anthropic using urllib (anthropic package not always importable
-            # in all Python envs; fall back to direct HTTP so no import needed)
+            # 2. Full city ranking — top 10 most vulnerable districts
+            if top10:
+                ranking_lines = " | ".join(
+                    f"#{i+1} {d.get('name')} ({d.get('borough')}) score={d.get('score')} [{d.get('tier')}]"
+                    for i, d in enumerate(top10)
+                )
+                system += f"\n\nCITY VULNERABILITY RANKING (top 10 of 59): {ranking_lines}"
+
+            # 3. Pantry coverage by area
+            if pantry_data:
+                pantry_lines = ", ".join(
+                    f"{p.get('name')} ({p.get('count')} pantry{'s' if p.get('count',1)>1 else ''})"
+                    for p in pantry_data
+                )
+                system += f"\n\nPANTRY COVERAGE (mapped locations): {pantry_lines}"
+
+            # 4. Response format instruction
+            fmt_instruction = FORMAT_INSTRUCTIONS.get(response_fmt, FORMAT_INSTRUCTIONS["Memo"])
+            system += f"\n\n{fmt_instruction}"
+
+            # ── Call Anthropic ────────────────────────────────────────────────
             try:
                 import anthropic
                 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
                 result = client.messages.create(
-                    model="claude-opus-4-5",
-                    max_tokens=400,
+                    model="claude-opus-4",
+                    max_tokens=800,
                     system=system,
                     messages=messages,
                 )
@@ -121,8 +177,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             except ImportError:
                 # Fall back to raw HTTP if the package isn't available
                 req_body = json.dumps({
-                    "model": "claude-opus-4-5",
-                    "max_tokens": 400,
+                    "model": "claude-opus-4",
+                    "max_tokens": 800,
                     "system": system,
                     "messages": messages,
                 }).encode()

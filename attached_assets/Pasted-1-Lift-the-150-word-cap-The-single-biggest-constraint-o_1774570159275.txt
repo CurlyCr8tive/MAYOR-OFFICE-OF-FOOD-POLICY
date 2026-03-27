@@ -1,0 +1,18 @@
+1. Lift the 150-word cap
+The single biggest constraint on output quality right now. The system prompt hard-limits responses to 150 words, which forces Claude to cut analysis before it's complete. For a policy tool where the output goes into memos and briefings, 300–400 words is more appropriate. The limit is one line in main.py — easy to change.
+
+2. Inject the full district ranking into every call
+Right now the AI gets the selected district's indicators but has no awareness of how that district compares to the other 58. If you pass in the top 10 ranked districts with their scores, Claude can make statements like "Mott Haven ranks 1st of 59, scoring 22 points above the next Critical-tier district" — which is far more useful for resource allocation arguments than a standalone score.
+
+3. Add pantry coverage data to the context
+The AI references "pantries per 10k" but those numbers are currently baked into the system prompt as static text. If you pass the actual pantry count and population estimate per district with each request, Claude can calculate coverage gaps dynamically for whatever district is selected rather than citing hardcoded figures for only a few neighborhoods.
+
+4. Give it conversation memory across sessions
+Right now the chat resets on every page reload. Saving the conversation history to localStorage and reloading it on startup means a policy analyst can return the next day and continue an analysis thread — ask follow-up questions, refine a memo — instead of starting cold every time.
+
+5. Add a response format switch
+The 150-word policy memo format is one style, but staff have different needs in different contexts. A simple dropdown or button set — Memo / Briefing / Bullet Points / Data Summary — passed as an instruction modifier in the request would let users get the same analysis in whichever format fits the meeting they're walking into.
+
+6. Use a more capable model
+The assistant currently calls claude-opus-4-5. Switching to claude-opus-4 (the most capable Claude model) would noticeably improve the depth and precision of policy reasoning, especially for complex multi-district comparisons. One word change in main.py.
+

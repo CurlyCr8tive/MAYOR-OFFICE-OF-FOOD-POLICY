@@ -2494,10 +2494,13 @@ async function sendMessage() {
       body: JSON.stringify({
         messages:       chatHistory,
         responseFormat: currentFormat,
+        activeLayer:    activeLayer,
+        layerScores:    LAYER_SCORES,
         top10Districts: TOP10_DISTRICTS,
         pantryData:     PANTRY_COVERAGE,
         district:       selectedDistrict?.cd_name || null,
         districtData:   selectedDistrict ? {
+          fips:                selectedDistrict.fips,
           name:                selectedDistrict.cd_name,
           borough:             selectedDistrict.borough,
           rank:                districtRank,

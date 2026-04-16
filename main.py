@@ -16,22 +16,25 @@ PORT = int(os.environ.get("PORT", 3000))
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 SYSTEM_PROMPT = (
-    "You are an AI food policy analyst for the NYC Mayor's Office of Food Policy. "
-    "You have access to live vulnerability data for all 59 NYC community districts. "
+    "You are an AI neighborhood intelligence analyst for The Grid NYC — "
+    "a multi-dimensional equity platform used by the NYC Mayor's Office of Food Policy "
+    "and other city agencies to make fund allocation decisions. "
+    "You have access to live data for all 59 NYC community districts across five dimensions: "
+    "Food Vulnerability, Housing Stability, Cost of Living, Health Burden, and Economic Stress. "
+    "Each district has an Equity Score (0-100) that composites all five dimensions. "
     "Federal context: $186B SNAP cuts incoming, 1.8M NYC SNAP recipients at risk, "
     "SNAP work requirements effective March 2026. "
     "Always format recommendations with → arrows. "
     "Rules: "
-    "1. When discussing a specific district, always lead with its exact vulnerability score, "
-    "rank out of 59, risk tier, and all five live indicators "
-    "(SNAP %, child poverty %, rent burden %, unemployment %, non-citizen %). "
-    "2. When discussing pantry gaps, cite the pantry count and coverage for affected areas "
-    "using the pantry data provided in context. "
-    "3. When discussing SNAP cuts, always cite the $186B figure and March 2026 deadline. "
-    "4. Always end every response with a line starting 'TODAY:' followed by one concrete "
+    "1. When an active data layer is specified, lead your analysis with that layer's indicators "
+    "for the selected district, then connect to the other dimensions. "
+    "2. Always cite specific scores and percentages — never give generic analysis. "
+    "3. When discussing fund allocation, reference the Equity Score and gap between need and "
+    "current investment. "
+    "4. When discussing SNAP cuts, always cite the $186B figure and March 2026 deadline. "
+    "5. Always end every response with a line starting 'TODAY:' followed by one concrete "
     "next step the planner can take immediately. "
-    "5. Aim for 300-400 words for thorough, complete analysis. "
-    "Do not truncate findings or recommendations."
+    "6. Aim for 300-400 words. Do not truncate findings or recommendations."
 )
 
 # Per-format output instructions injected alongside the system prompt
@@ -113,6 +116,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             top10          = payload.get("top10Districts", [])
             pantry_data    = payload.get("pantryData", [])
             response_fmt   = payload.get("responseFormat", "Memo")
+            active_layer   = payload.get("activeLayer", "food")
+            layer_scores   = payload.get("layerScores", {})
 
             if not messages:
                 self._json_response(400, {"error": "messages array is required"})
@@ -121,7 +126,21 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             # ── Build system context ──────────────────────────────────────────
             system = SYSTEM_PROMPT
 
-            # 1. Selected district — full live indicators
+            # Active layer context
+            layer_labels = {
+                "food": "Food Vulnerability",
+                "housing": "Housing Stability",
+                "cost_of_living": "Cost of Living",
+                "health": "Health Burden",
+                "economic": "Economic Stress",
+                "equity": "Equity Score (composite)",
+            }
+            system += (
+                f"\n\nACTIVE DATA LAYER: {layer_labels.get(active_layer, active_layer)}. "
+                "Lead your analysis with indicators relevant to this layer."
+            )
+
+            # 1. Selected district — full live indicators + multi-layer scores
             if district_data:
                 ind = district_data.get("indicators", {})
                 system += (
@@ -138,6 +157,23 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                     f"Non-citizen pop {ind.get('noncitizen_pct')}%. "
                     f"Always cite these exact numbers when discussing this district."
                 )
+                # Append multi-layer scores if provided
+                if layer_scores:
+                    fips = district_data.get("fips", "")
+                    scores = layer_scores.get(fips, {})
+                    if scores:
+                        food_score = district_data.get("vulnerability_score", "?")
+                        eq = round((float(food_score) + scores.get("housing", 50) +
+                                    scores.get("cost_of_living", 50) + scores.get("health", 50) +
+                                    scores.get("economic", 50)) / 5)
+                        system += (
+                            f" Multi-dimensional scores: "
+                            f"Housing Stability {scores.get('housing', '?')}/100, "
+                            f"Cost of Living {scores.get('cost_of_living', '?')}/100, "
+                            f"Health Burden {scores.get('health', '?')}/100, "
+                            f"Economic Stress {scores.get('economic', '?')}/100, "
+                            f"Equity Score (composite) {eq}/100."
+                        )
             elif district:
                 system += f"\n\nThe user is currently viewing: {district}."
 

@@ -1220,24 +1220,7 @@ html, body {
 
       <div id="district-list"></div>
 
-      <div class="stat-cards">
-        <div class="stat-card">
-          <div class="stat-val">1.8M</div>
-          <div class="stat-label">SNAP RECIPIENTS</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val" id="stat-critical">8</div>
-          <div class="stat-label">CRITICAL DISTRICTS</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">700+</div>
-          <div class="stat-label">FOOD PANTRIES</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">$186B</div>
-          <div class="stat-label">CUTS INCOMING</div>
-        </div>
-      </div>
+      <div class="stat-cards" id="stat-cards"></div>
 
       <div class="borough-filters">
         <button class="borough-btn active" onclick="filterBorough('All')">All</button>
@@ -1765,6 +1748,69 @@ function getLayerIndicators(district) {
   return [];
 }
 
+function renderStatCards() {
+  const el  = document.getElementById('stat-cards');
+  const cfg = LAYER_CONFIG[activeLayer];
+
+  // Count districts in each tier for the active layer
+  const counts = { 0: 0, 1: 0, 2: 0, 3: 0 };
+  DISTRICTS.forEach(d => {
+    const score = getDistrictLayerScore(d);
+    const [t1, t2, t3] = cfg.thresholds;
+    if      (score >= t1) counts[0]++;
+    else if (score >= t2) counts[1]++;
+    else if (score >= t3) counts[2]++;
+    else                  counts[3]++;
+  });
+
+  const cards = {
+    food: [
+      { val: '1.8M',           label: 'SNAP RECIPIENTS',     color: '' },
+      { val: counts[0],        label: 'CRITICAL DISTRICTS',  color: '#d32f2f' },
+      { val: '700+',           label: 'FOOD PANTRIES',       color: '' },
+      { val: '$186B',          label: 'CUTS INCOMING',       color: '#d32f2f' },
+    ],
+    housing: [
+      { val: counts[0],        label: 'CRITICAL DISTRICTS',  color: '#6a1b9a' },
+      { val: counts[0]+counts[1], label: 'HIGH+ STRESS',     color: '#ab47bc' },
+      { val: '226K+',          label: 'HPD VIOLATIONS/YR',   color: '' },
+      { val: '32%',            label: 'AT DISPLACEMENT RISK',color: '#ab47bc' },
+    ],
+    cost_of_living: [
+      { val: counts[0],        label: 'CRITICAL PRESSURE',   color: '#bf360c' },
+      { val: '$3,200',         label: 'MEDIAN NYC RENT',      color: '' },
+      { val: '58%',            label: 'RENT-BURDENED HH',    color: '#ef6c00' },
+      { val: '8.2%',           label: 'AVG RENT GROWTH YOY', color: '#ef6c00' },
+    ],
+    health: [
+      { val: counts[0],        label: 'CRITICAL BURDEN',     color: '#0d47a1' },
+      { val: '10 YRS',         label: 'LIFE EXP. GAP',       color: '#d32f2f' },
+      { val: '34%',            label: 'CHRONIC DISEASE RATE',color: '#1976d2' },
+      { val: counts[0]+counts[1], label: 'HIGH+ BURDEN DISTs',color: '#1976d2' },
+    ],
+    economic: [
+      { val: counts[0],        label: 'CRITICAL STRESS',     color: '#004d40' },
+      { val: '$48K',           label: 'MEDIAN INCOME (CITY)',color: '' },
+      { val: counts[0]+counts[1], label: 'HIGH+ STRESS DISTs',color: '#00897b' },
+      { val: '7.1%',           label: 'AVG UNEMPLOYMENT',    color: '#00897b' },
+    ],
+    equity: [
+      { val: counts[0],        label: 'CRITICAL EQUITY',     color: '#b71c1c' },
+      { val: counts[0]+counts[1], label: 'HIGH+ PRIORITY',   color: '#e65100' },
+      { val: '59',             label: 'DISTRICTS TRACKED',   color: '' },
+      { val: '5',              label: 'DIMENSIONS SCORED',   color: '' },
+    ],
+  };
+
+  const data = cards[activeLayer] || cards.food;
+  el.innerHTML = data.map(c => `
+    <div class="stat-card">
+      <div class="stat-val" style="${c.color ? 'color:' + c.color : ''}">${c.val}</div>
+      <div class="stat-label">${c.label}</div>
+    </div>
+  `).join('');
+}
+
 function switchLayer(layer) {
   activeLayer = layer;
   const cfg   = LAYER_CONFIG[layer];
@@ -1788,6 +1834,7 @@ function switchLayer(layer) {
 
   renderMapLegend();
   renderLayerChips();
+  renderStatCards();
   if (selectedDistrict) renderDistrictDetail(selectedDistrict);
 }
 
@@ -2432,6 +2479,7 @@ renderDistrictList();
 renderAlerts();
 renderMapLegend();
 renderLayerChips();
+renderStatCards();
 initMap();
 initChat();
 selectDistrict(DISTRICTS[0]); // Pre-select #1

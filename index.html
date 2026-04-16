@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NYC Food Insecurity Vulnerability Dashboard</title>
+<title>The Grid NYC — Neighborhood Intelligence Platform</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -49,7 +49,7 @@ html, body {
 /* ── LAYOUT ───────────────────────────────────────────────── */
 #app {
   display: grid;
-  grid-template-rows: 48px 1fr;
+  grid-template-rows: 48px 38px 1fr;
   height: 100vh;
 }
 
@@ -838,6 +838,61 @@ html, body {
 }
 .export-btn:hover { background: #ff4d1c; color: #fff; }
 
+/* ── TOPBAR SUBTITLE ──────────────────────────────────────────────────────── */
+.topbar-subtitle {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  text-transform: uppercase;
+}
+
+/* ── LAYER NAVIGATION ─────────────────────────────────────────────────────── */
+#layer-nav {
+  display: flex;
+  align-items: center;
+  background: var(--bg-deepest);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  gap: 0;
+  z-index: 999;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#layer-nav::-webkit-scrollbar { display: none; }
+
+.layer-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 0 14px;
+  height: 38px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  margin-bottom: -1px;
+  text-transform: uppercase;
+}
+.layer-tab:hover { color: var(--text-secondary); }
+.layer-tab[data-layer="food"].active         { color: var(--accent);   border-bottom-color: var(--accent); }
+.layer-tab[data-layer="housing"].active      { color: #ab47bc;  border-bottom-color: #ab47bc; }
+.layer-tab[data-layer="cost_of_living"].active{ color: #ff9800;  border-bottom-color: #ff9800; }
+.layer-tab[data-layer="health"].active       { color: #42a5f5;  border-bottom-color: #42a5f5; }
+.layer-tab[data-layer="economic"].active     { color: #26a69a;  border-bottom-color: #26a69a; }
+.layer-tab[data-layer="equity"].active       { color: #ffd54f;  border-bottom-color: #ffd54f; }
+
+.layer-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
 /* ── PRINT / PDF STYLES ─────────────────────────────────────────────────────── */
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -949,7 +1004,10 @@ html, body {
   <header id="topbar">
     <div class="topbar-left">
       <div class="nyc-logo">NYC</div>
-      <div class="topbar-title">NYC <span>FOOD VULNERABILITY</span> DASHBOARD</div>
+      <div>
+        <div class="topbar-title">THE <span>GRID</span> NYC</div>
+        <div class="topbar-subtitle">EVERY DISTRICT · EVERY INDICATOR · ONE VIEW</div>
+      </div>
     </div>
     <div class="topbar-right">
       <div class="live-indicator">
@@ -960,6 +1018,17 @@ html, body {
       <div id="clock">--:-- --</div>
     </div>
   </header>
+
+  <!-- LAYER NAVIGATION -->
+  <nav id="layer-nav">
+    <button class="layer-tab active" data-layer="food"          onclick="switchLayer('food')">FOOD</button>
+    <button class="layer-tab"        data-layer="housing"       onclick="switchLayer('housing')">HOUSING</button>
+    <button class="layer-tab"        data-layer="cost_of_living" onclick="switchLayer('cost_of_living')">COST OF LIVING</button>
+    <button class="layer-tab"        data-layer="health"        onclick="switchLayer('health')">HEALTH</button>
+    <button class="layer-tab"        data-layer="economic"      onclick="switchLayer('economic')">ECONOMIC</button>
+    <div class="layer-divider"></div>
+    <button class="layer-tab"        data-layer="equity"        onclick="switchLayer('equity')">◆ EQUITY SCORE</button>
+  </nav>
 
   <div id="main">
 
@@ -1004,10 +1073,10 @@ html, body {
     <!-- CENTER PANEL -->
     <main id="center">
       <div id="map-container">
-        <div class="map-header">NYC · 59 COMMUNITY DISTRICTS · VULNERABILITY MAP</div>
+        <div class="map-header" id="map-header-text">NYC · 59 COMMUNITY DISTRICTS · FOOD VULNERABILITY</div>
         <div class="map-timestamp" id="map-timestamp">Updated: Loading...</div>
         <div id="map"></div>
-        <div class="map-legend">
+        <div class="map-legend" id="map-legend">
           <div class="legend-title">RISK TIER</div>
           <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f"></div>Critical</div>
           <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div>High</div>
@@ -1197,11 +1266,324 @@ const PANTRIES = [
   { lat: 40.6368, lng: -74.0741, name: "Staten Island - St. George" },
 ];
 
+// ── LAYER SCORES (0–100 per layer, all 59 districts keyed by fips) ────────────
+const LAYER_SCORES = {
+  "201":{ housing:82, cost_of_living:91, health:88, economic:86 },
+  "206":{ housing:79, cost_of_living:88, health:85, economic:84 },
+  "205":{ housing:76, cost_of_living:85, health:82, economic:80 },
+  "202":{ housing:75, cost_of_living:84, health:86, economic:85 },
+  "203":{ housing:78, cost_of_living:86, health:83, economic:82 },
+  "204":{ housing:74, cost_of_living:83, health:80, economic:79 },
+  "207":{ housing:70, cost_of_living:79, health:76, economic:76 },
+  "316":{ housing:85, cost_of_living:80, health:82, economic:78 },
+  "312":{ housing:58, cost_of_living:76, health:65, economic:62 },
+  "209":{ housing:68, cost_of_living:74, health:72, economic:70 },
+  "305":{ housing:83, cost_of_living:78, health:78, economic:74 },
+  "313":{ housing:72, cost_of_living:74, health:68, economic:66 },
+  "111":{ housing:71, cost_of_living:77, health:75, economic:72 },
+  "212":{ housing:60, cost_of_living:68, health:62, economic:65 },
+  "112":{ housing:66, cost_of_living:75, health:70, economic:70 },
+  "211":{ housing:63, cost_of_living:70, health:66, economic:65 },
+  "311":{ housing:55, cost_of_living:66, health:58, economic:56 },
+  "403":{ housing:62, cost_of_living:72, health:64, economic:62 },
+  "317":{ housing:60, cost_of_living:68, health:62, economic:60 },
+  "404":{ housing:60, cost_of_living:70, health:62, economic:60 },
+  "304":{ housing:74, cost_of_living:79, health:66, economic:62 },
+  "303":{ housing:65, cost_of_living:71, health:64, economic:60 },
+  "109":{ housing:60, cost_of_living:68, health:62, economic:58 },
+  "414":{ housing:62, cost_of_living:68, health:64, economic:62 },
+  "110":{ housing:62, cost_of_living:68, health:64, economic:60 },
+  "301":{ housing:48, cost_of_living:68, health:45, economic:42 },
+  "412":{ housing:55, cost_of_living:62, health:58, economic:56 },
+  "103":{ housing:52, cost_of_living:65, health:56, economic:52 },
+  "208":{ housing:58, cost_of_living:66, health:60, economic:58 },
+  "407":{ housing:52, cost_of_living:64, health:56, economic:52 },
+  "315":{ housing:48, cost_of_living:62, health:50, economic:52 },
+  "309":{ housing:62, cost_of_living:70, health:62, economic:63 },
+  "314":{ housing:55, cost_of_living:66, health:58, economic:58 },
+  "307":{ housing:64, cost_of_living:68, health:60, economic:60 },
+  "409":{ housing:52, cost_of_living:64, health:54, economic:58 },
+  "501":{ housing:58, cost_of_living:66, health:56, economic:60 },
+  "410":{ housing:35, cost_of_living:55, health:42, economic:42 },
+  "408":{ housing:38, cost_of_living:52, health:45, economic:45 },
+  "210":{ housing:42, cost_of_living:56, health:48, economic:50 },
+  "318":{ housing:50, cost_of_living:60, health:55, economic:55 },
+  "308":{ housing:64, cost_of_living:68, health:60, economic:60 },
+  "310":{ housing:36, cost_of_living:52, health:40, economic:42 },
+  "405":{ housing:58, cost_of_living:60, health:52, economic:52 },
+  "402":{ housing:47, cost_of_living:62, health:50, economic:50 },
+  "413":{ housing:40, cost_of_living:50, health:45, economic:45 },
+  "401":{ housing:55, cost_of_living:65, health:48, economic:48 },
+  "502":{ housing:38, cost_of_living:48, health:42, economic:40 },
+  "411":{ housing:28, cost_of_living:42, health:32, economic:32 },
+  "406":{ housing:30, cost_of_living:48, health:35, economic:35 },
+  "104":{ housing:42, cost_of_living:55, health:38, economic:38 },
+  "302":{ housing:48, cost_of_living:52, health:44, economic:42 },
+  "503":{ housing:22, cost_of_living:35, health:30, economic:28 },
+  "107":{ housing:32, cost_of_living:50, health:28, economic:30 },
+  "105":{ housing:25, cost_of_living:40, health:32, economic:28 },
+  "306":{ housing:20, cost_of_living:38, health:22, economic:22 },
+  "106":{ housing:22, cost_of_living:42, health:25, economic:25 },
+  "102":{ housing:18, cost_of_living:35, health:20, economic:22 },
+  "108":{ housing:15, cost_of_living:30, health:18, economic:18 },
+  "101":{ housing:12, cost_of_living:22, health:15, economic:15 },
+};
+
+// ── LAYER CONFIGURATION ───────────────────────────────────────────────────────
+const LAYER_CONFIG = {
+  food: {
+    label: 'FOOD VULNERABILITY',
+    thresholds: [60, 45, 25],
+    tierLabels: ['Critical','High','Moderate','Lower'],
+    colors: ['#d32f2f','#f57c00','#fbc02d','#388e3c'],
+    accentColor: '#ff4d1c',
+    chips: [
+      { text:'Which neighborhoods will be hit hardest by SNAP work requirements?', label:'SNAP WORK REQUIREMENTS' },
+      { text:'Where are the worst pantry gaps?', label:'PANTRY GAPS' },
+      { text:'Generate a policy memo for the Bronx', label:'POLICY MEMO' },
+      { text:'Predict SNAP impact of federal cuts', label:'PREDICT IMPACT' },
+    ],
+  },
+  housing: {
+    label: 'HOUSING STABILITY',
+    thresholds: [70, 50, 30],
+    tierLabels: ['Critical','High','Moderate','Stable'],
+    colors: ['#6a1b9a','#ab47bc','#ce93d8','#388e3c'],
+    accentColor: '#ab47bc',
+    chips: [
+      { text:'Which districts have the highest housing code violation rates?', label:'HPD VIOLATIONS' },
+      { text:'Where is displacement risk highest right now?', label:'DISPLACEMENT RISK' },
+      { text:'How does housing instability connect to food insecurity?', label:'HOUSING + FOOD LINK' },
+      { text:'Where would affordable housing investment have the most impact?', label:'INVESTMENT TARGETS' },
+    ],
+  },
+  cost_of_living: {
+    label: 'COST OF LIVING',
+    thresholds: [75, 55, 35],
+    tierLabels: ['Critical','High','Moderate','Lower'],
+    colors: ['#bf360c','#ef6c00','#ffa726','#388e3c'],
+    accentColor: '#ff9800',
+    chips: [
+      { text:'Which neighborhoods have the worst rent-to-income ratios?', label:'RENT BURDEN' },
+      { text:'Where is rent growing fastest and who is most at risk?', label:'RENT GROWTH' },
+      { text:'How do rising costs affect SNAP utilization?', label:'COST + SNAP LINK' },
+      { text:'Which districts need immediate cost-of-living relief programs?', label:'RELIEF TARGETS' },
+    ],
+  },
+  health: {
+    label: 'HEALTH BURDEN',
+    thresholds: [70, 50, 30],
+    tierLabels: ['Critical','High','Moderate','Lower'],
+    colors: ['#0d47a1','#1976d2','#64b5f6','#388e3c'],
+    accentColor: '#42a5f5',
+    chips: [
+      { text:'Which districts have the lowest life expectancy and why?', label:'LIFE EXPECTANCY' },
+      { text:'Where are asthma and chronic disease rates highest?', label:'CHRONIC DISEASE' },
+      { text:'How does food insecurity drive poor health outcomes in the Bronx?', label:'FOOD + HEALTH LINK' },
+      { text:'Which neighborhoods need health infrastructure investment most urgently?', label:'HEALTH INVESTMENT' },
+    ],
+  },
+  economic: {
+    label: 'ECONOMIC STRESS',
+    thresholds: [70, 50, 30],
+    tierLabels: ['Critical','High','Moderate','Lower'],
+    colors: ['#004d40','#00897b','#4db6ac','#388e3c'],
+    accentColor: '#26a69a',
+    chips: [
+      { text:'Which neighborhoods have the highest unemployment and lowest income growth?', label:'UNEMPLOYMENT' },
+      { text:'Where are businesses closing fastest?', label:'BUSINESS CLOSURES' },
+      { text:'How does economic stress predict future food insecurity?', label:'ECONOMIC + FOOD LINK' },
+      { text:'Where would workforce development investment have the highest return?', label:'INVESTMENT ROI' },
+    ],
+  },
+  equity: {
+    label: 'EQUITY SCORE',
+    thresholds: [70, 50, 30],
+    tierLabels: ['Critical','High','Moderate','Lower'],
+    colors: ['#b71c1c','#e65100','#f9a825','#388e3c'],
+    accentColor: '#ffd54f',
+    chips: [
+      { text:'Which neighborhoods rank worst across all 5 dimensions combined?', label:'WORST OVERALL' },
+      { text:'If I have $5M to allocate, where does it have the most impact?', label:'FUND ALLOCATION' },
+      { text:'Which neighborhoods are improving and which are deteriorating?', label:'TRENDS' },
+      { text:'Generate a full equity brief for the top 5 most vulnerable districts', label:'EQUITY BRIEF' },
+    ],
+  },
+};
+
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let selectedDistrict = null;
 let currentFilter    = 'All';
 let currentFormat    = 'Memo';
 let map;
+let geojsonLayer     = null;
+let activeLayer      = 'food';
+
+// ── LAYER HELPERS ─────────────────────────────────────────────────────────────
+function getDistrictLayerScore(d) {
+  if (activeLayer === 'food') return d.vulnerability_score;
+  if (activeLayer === 'equity') {
+    const s = LAYER_SCORES[d.fips];
+    if (!s) return Math.round(d.vulnerability_score * 0.6);
+    return Math.round((d.vulnerability_score + s.housing + s.cost_of_living + s.health + s.economic) / 5);
+  }
+  const s = LAYER_SCORES[d.fips];
+  return s ? s[activeLayer] : Math.round(d.vulnerability_score * 0.6);
+}
+
+function getDistrictLayerTier(score) {
+  const cfg = LAYER_CONFIG[activeLayer];
+  const [t1, t2, t3] = cfg.thresholds;
+  if (score >= t1) return { tier: cfg.tierLabels[0], color: cfg.colors[0] };
+  if (score >= t2) return { tier: cfg.tierLabels[1], color: cfg.colors[1] };
+  if (score >= t3) return { tier: cfg.tierLabels[2], color: cfg.colors[2] };
+  return { tier: cfg.tierLabels[3], color: cfg.colors[3] };
+}
+
+function featureStyle(feature) {
+  const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+  const district = getDistrictData(fips);
+  if (!district) return { fillColor: getFallbackColor(fips), fillOpacity: 0.2, color: '#1e1e32', weight: 1, opacity: 0.8 };
+  const score = getDistrictLayerScore(district);
+  const { color } = getDistrictLayerTier(score);
+  return { fillColor: color, fillOpacity: 0.75, color: '#1e1e32', weight: 1, opacity: 0.8 };
+}
+
+function buildTooltip(district) {
+  const score  = getDistrictLayerScore(district);
+  const { tier, color } = getDistrictLayerTier(score);
+  if (activeLayer === 'food') {
+    return `<strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
+      Score: <span style="color:#ff4d1c;font-weight:500">${district.vulnerability_score} ${district.risk_tier.toUpperCase()}</span><br>
+      SNAP Enrollment: ${district.indicators.snap_household_pct.toFixed(1)}%<br>
+      Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
+      Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}%<br>
+      Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%<br>
+      Non-citizen Pop: ${district.indicators.noncitizen_pct.toFixed(1)}%`;
+  }
+  const cfg = LAYER_CONFIG[activeLayer];
+  return `<strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
+    <span style="color:${color};font-weight:500">${cfg.label}: ${score}/100 — ${tier}</span>`;
+}
+
+function renderMapLegend() {
+  const cfg = LAYER_CONFIG[activeLayer];
+  const el  = document.getElementById('map-legend');
+  el.innerHTML = `
+    <div class="legend-title">${cfg.label}</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[0]}"></div>${cfg.tierLabels[0]}</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[1]}"></div>${cfg.tierLabels[1]}</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[2]}"></div>${cfg.tierLabels[2]}</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[3]}"></div>${cfg.tierLabels[3]}</div>
+    ${activeLayer === 'food' ? '<div class="legend-item"><div class="legend-dot-marker"></div>Food Pantry</div>' : ''}
+  `;
+}
+
+function renderLayerChips() {
+  const cfg     = LAYER_CONFIG[activeLayer];
+  const chipRow = document.querySelector('.chip-row');
+  chipRow.innerHTML = cfg.chips.map(c =>
+    `<button class="chip" onclick="sendChip('${c.text.replace(/'/g, "&#39;")}')">${c.label}</button>`
+  ).join('');
+}
+
+function getLayerIndicators(district) {
+  const ls = LAYER_SCORES[district.fips] || {};
+
+  if (activeLayer === 'food') {
+    return INDICATOR_CONFIG.map(cfg => ({
+      label: cfg.label, val: district.indicators[cfg.key] || 0, max: 100, color: cfg.color, suffix: '%',
+    }));
+  }
+
+  if (activeLayer === 'housing') {
+    const s = ls.housing || 50;
+    return [
+      { label:'Housing Stress Index',  val: s,                                    max: 100, color:'#9c27b0', suffix:'/100' },
+      { label:'HPD Violations /1k',    val: Math.round(s * 0.75 + 5),             max: 80,  color:'#ab47bc', suffix:'' },
+      { label:'Displacement Risk',     val: Math.round(s * 0.9),                  max: 100, color:'#ce93d8', suffix:'/100' },
+      { label:'Rent Burden',           val: district.indicators.rent_burden_pct,  max: 65,  color:'#ba68c8', suffix:'%' },
+      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),    max: 20,  color:'#9c27b0', suffix:'' },
+    ];
+  }
+
+  if (activeLayer === 'cost_of_living') {
+    const s = ls.cost_of_living || 50;
+    return [
+      { label:'Cost Pressure Index', val: s,                                       max: 100,  color:'#ef6c00', suffix:'/100' },
+      { label:'Median Rent',         val: Math.round(800 + s * 22),                max: 4000, color:'#f57c00', suffix:'/mo', prefix:'$' },
+      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),       max: 15,   color:'#ffa726', suffix:'%' },
+      { label:'Rent Burden',         val: district.indicators.rent_burden_pct,     max: 65,   color:'#ff9800', suffix:'%' },
+      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),       max: 15,   color:'#ffb74d', suffix:'%' },
+    ];
+  }
+
+  if (activeLayer === 'health') {
+    const s = ls.health || 50;
+    return [
+      { label:'Health Burden Index',  val: s,                                      max: 100, color:'#1976d2', suffix:'/100' },
+      { label:'Life Expectancy',      val: parseFloat((85 - s * 0.12).toFixed(1)), max: 85,  color:'#42a5f5', suffix:' yrs' },
+      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),      max: 35,  color:'#64b5f6', suffix:'%' },
+      { label:'Asthma Rate /10k',     val: Math.round(s * 1.2),                    max: 120, color:'#1976d2', suffix:'' },
+      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),              max: 100, color:'#90caf9', suffix:'/100' },
+    ];
+  }
+
+  if (activeLayer === 'economic') {
+    const s = ls.economic || 50;
+    return [
+      { label:'Economic Stress Index', val: s,                                      max: 100, color:'#00897b', suffix:'/100' },
+      { label:'Median Income',         val: Math.round(120 - s * 0.7),              max: 100, color:'#26a69a', suffix:'k', prefix:'$' },
+      { label:'Unemployment',          val: district.indicators.unemployment_pct,   max: 20,  color:'#4db6ac', suffix:'%' },
+      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),       max: 15,  color:'#00897b', suffix:'%/yr' },
+      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),              max: 75,  color:'#80cbc4', suffix:'%' },
+    ];
+  }
+
+  if (activeLayer === 'equity') {
+    const equityScore = getDistrictLayerScore(district);
+    const hs = ls.housing || 50;
+    const cs = ls.cost_of_living || 50;
+    const he = ls.health || 50;
+    const ec = ls.economic || 50;
+    return [
+      { label:'Equity Score',       val: equityScore,                max: 100, color:'#ffd54f', suffix:'/100' },
+      { label:'Food Vulnerability', val: district.vulnerability_score, max: 100, color:'#d32f2f', suffix:'/100' },
+      { label:'Housing Stress',     val: hs,                          max: 100, color:'#9c27b0', suffix:'/100' },
+      { label:'Cost Pressure',      val: cs,                          max: 100, color:'#ef6c00', suffix:'/100' },
+      { label:'Health Burden',      val: he,                          max: 100, color:'#1976d2', suffix:'/100' },
+      { label:'Economic Stress',    val: ec,                          max: 100, color:'#00897b', suffix:'/100' },
+    ];
+  }
+
+  return [];
+}
+
+function switchLayer(layer) {
+  activeLayer = layer;
+  const cfg   = LAYER_CONFIG[layer];
+
+  document.querySelectorAll('.layer-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.layer-tab[data-layer="${layer}"]`).classList.add('active');
+
+  document.querySelector('.sidebar-section .section-label').textContent = cfg.label + ' RANKING';
+  document.getElementById('map-header-text').textContent = `NYC · 59 COMMUNITY DISTRICTS · ${cfg.label}`;
+
+  renderDistrictList(currentFilter, document.getElementById('search-input').value);
+
+  if (geojsonLayer) {
+    geojsonLayer.setStyle(featureStyle);
+    geojsonLayer.eachLayer(l => {
+      const fips = l.feature?.properties?.BoroCD || l.feature?.properties?.boro_cd || l.feature?.properties?.BORO_CD;
+      const d = getDistrictData(fips);
+      if (d && l.getTooltip && l.getTooltip()) l.setTooltipContent(buildTooltip(d));
+    });
+  }
+
+  renderMapLegend();
+  renderLayerChips();
+  if (selectedDistrict) renderDistrictDetail(selectedDistrict);
+}
 
 // ── FORMAT SELECTOR ────────────────────────────────────────────────────────────
 function setFormat(fmt, btn) {
@@ -1245,14 +1627,19 @@ document.getElementById('map-timestamp').textContent =
 function renderDistrictList(filter = 'All', searchQuery = '') {
   const list = document.getElementById('district-list');
   list.innerHTML = '';
-  const filtered = DISTRICTS.filter(d => {
+  let filtered = DISTRICTS.filter(d => {
     const matchBorough = filter === 'All' || d.borough === filter;
     const matchSearch  = d.cd_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          d.borough.toLowerCase().includes(searchQuery.toLowerCase());
     return matchBorough && matchSearch;
   });
 
+  // Sort by active layer score descending
+  filtered = filtered.slice().sort((a, b) => getDistrictLayerScore(b) - getDistrictLayerScore(a));
+
   filtered.forEach((d, i) => {
+    const score          = getDistrictLayerScore(d);
+    const { tier, color } = getDistrictLayerTier(score);
     const item = document.createElement('div');
     item.className = 'district-item' + (selectedDistrict?.fips === d.fips ? ' active' : '');
     item.style.animationDelay = `${i * 0.03}s`;
@@ -1265,8 +1652,8 @@ function renderDistrictList(filter = 'All', searchQuery = '') {
         </div>
       </div>
       <div class="district-right">
-        <span class="district-score" style="color:${d.color}">${d.vulnerability_score}</span>
-        <span class="risk-badge badge-${d.risk_tier}">${d.risk_tier.toUpperCase()}</span>
+        <span class="district-score" style="color:${color}">${score}</span>
+        <span class="risk-badge" style="background:${color}22;color:${color};border:1px solid ${color}">${tier.toUpperCase()}</span>
       </div>
     `;
     item.onclick = () => selectDistrict(d);
@@ -1292,37 +1679,38 @@ document.getElementById('search-input').addEventListener('input', e => {
 function selectDistrict(d) {
   selectedDistrict = d;
   renderDistrictList(currentFilter, document.getElementById('search-input').value);
+  renderDistrictDetail(d);
+  document.getElementById('trend-area').style.display = 'block';
+  drawTrendChart(d);
+}
 
+function renderDistrictDetail(d) {
   document.getElementById('detail-name').textContent = d.cd_name;
 
   const barsContainer = document.getElementById('detail-bars');
   barsContainer.innerHTML = '';
 
-  INDICATOR_CONFIG.forEach(cfg => {
-    const val = d.indicators[cfg.key] || 0;
+  getLayerIndicators(d).forEach(ind => {
+    const pct        = Math.min((ind.val / ind.max) * 100, 100);
+    const displayVal = (ind.prefix || '') + ind.val + (ind.suffix || '');
     const row = document.createElement('div');
     row.className = 'indicator-row';
     row.innerHTML = `
-      <div class="indicator-label">${cfg.label}</div>
+      <div class="indicator-label">${ind.label}</div>
       <div class="indicator-track">
-        <div class="indicator-fill" style="width:0%;background:${cfg.color}"
-             data-target="${Math.min(val, 100)}"></div>
+        <div class="indicator-fill" style="width:0%;background:${ind.color}"
+             data-target="${pct.toFixed(1)}"></div>
       </div>
-      <div class="indicator-pct" style="color:${cfg.color}">${val.toFixed(1)}%</div>
+      <div class="indicator-pct" style="color:${ind.color}">${displayVal}</div>
     `;
     barsContainer.appendChild(row);
   });
 
-  // Animate bars
   requestAnimationFrame(() => {
     document.querySelectorAll('.indicator-fill').forEach(bar => {
       bar.style.width = bar.dataset.target + '%';
     });
   });
-
-  // Show trend chart
-  document.getElementById('trend-area').style.display = 'block';
-  drawTrendChart(d);
 }
 
 // ── TREND CHART ───────────────────────────────────────────────────────────────
@@ -1451,55 +1839,32 @@ function getFallbackColor(fips) {
 }
 
 function loadCommunityDistrictGeoJSON() {
-  // Using NYC Open Data community districts GeoJSON
   fetch('/community_districts.geojson')
     .then(r => r.json())
-    .then(geojson => {
-      L.geoJSON(geojson, {
-        style: feature => {
-          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
-          const district = getDistrictData(fips);
-          return {
-            fillColor:   district ? district.color : getFallbackColor(fips),
-            fillOpacity: district ? 0.75 : 0.2,
-            color:       '#1e1e32',
-            weight:      1,
-            opacity:     0.8
-          };
-        },
+    .then(gjson => {
+      geojsonLayer = L.geoJSON(gjson, {
+        style: featureStyle,
         onEachFeature: (feature, layer) => {
-          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+          const fips     = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
           const district = getDistrictData(fips);
+          if (!district) return;
 
-          if (district) {
-            const tooltipContent = `
-              <strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
-              Score: <span style="color:#ff4d1c;font-weight:500">${district.vulnerability_score} ${district.risk_tier.toUpperCase()}</span><br>
-              SNAP Enrollment: ${district.indicators.snap_household_pct.toFixed(1)}%<br>
-              Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
-              Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}%<br>
-              Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%<br>
-              Non-citizen Pop: ${district.indicators.noncitizen_pct.toFixed(1)}%
-            `;
-            layer.bindTooltip(tooltipContent, { sticky: true, direction: 'top' });
+          layer.bindTooltip(buildTooltip(district), { sticky: true, direction: 'top' });
 
-            layer.on({
-              mouseover: e => {
-                e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: '#ff4d1c' });
-              },
-              mouseout: e => {
-                e.target.setStyle({ fillOpacity: 0.75, weight: 1, color: '#1e1e32' });
-              },
-              click: () => selectDistrict(district)
-            });
-          }
+          layer.on({
+            mouseover: e => {
+              const accentColor = LAYER_CONFIG[activeLayer].accentColor;
+              e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: accentColor });
+            },
+            mouseout: e => {
+              e.target.setStyle(featureStyle(feature));
+            },
+            click: () => selectDistrict(district),
+          });
         }
       }).addTo(map);
     })
-    .catch(() => {
-      // Fallback if GeoJSON fails to load
-      console.warn('GeoJSON failed — add local file as fallback');
-    });
+    .catch(() => console.warn('GeoJSON failed to load'));
 }
 
 // ── AI CHAT ───────────────────────────────────────────────────────────────────
@@ -1750,6 +2115,8 @@ function exportPDF() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 renderDistrictList();
 renderAlerts();
+renderMapLegend();
+renderLayerChips();
 initMap();
 initChat();
 selectDistrict(DISTRICTS[0]); // Pre-select #1

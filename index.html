@@ -1128,6 +1128,41 @@ html, body {
   flex-shrink: 0;
 }
 
+/* ── AGENCY LENS ──────────────────────────────────────────────────────────── */
+.agency-lens-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 16px;
+  flex-shrink: 0;
+}
+.agency-lens-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.agency-lens-btn {
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  height: 24px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.agency-lens-btn:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
+.agency-lens-btn[data-lens="MOFP"].active  { background: rgba(255,77,28,0.12);  border-color: var(--accent); color: var(--accent); }
+.agency-lens-btn[data-lens="HPD"].active   { background: rgba(171,71,188,0.12); border-color: #ab47bc;       color: #ab47bc; }
+.agency-lens-btn[data-lens="DOHMH"].active { background: rgba(66,165,245,0.12); border-color: #42a5f5;       color: #42a5f5; }
+
 /* ── PRINT / PDF STYLES ─────────────────────────────────────────────────────── */
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1249,20 +1284,26 @@ html, body {
         <div class="live-dot"></div>
         LIVE DATA
       </div>
-      <div>MAYOR'S OFFICE OF FOOD POLICY</div>
+      <div id="active-agency-label">MAYOR'S OFFICE OF FOOD POLICY</div>
       <div id="clock">--:-- --</div>
     </div>
   </header>
 
   <!-- LAYER NAVIGATION -->
   <nav id="layer-nav">
-    <button class="layer-tab active" data-layer="food"          onclick="switchLayer('food')">FOOD</button>
-    <button class="layer-tab"        data-layer="housing"       onclick="switchLayer('housing')">HOUSING</button>
+    <button class="layer-tab active" data-layer="food"           onclick="switchLayer('food')">FOOD</button>
+    <button class="layer-tab"        data-layer="housing"        onclick="switchLayer('housing')">HOUSING</button>
     <button class="layer-tab"        data-layer="cost_of_living" onclick="switchLayer('cost_of_living')">COST OF LIVING</button>
-    <button class="layer-tab"        data-layer="health"        onclick="switchLayer('health')">HEALTH</button>
-    <button class="layer-tab"        data-layer="economic"      onclick="switchLayer('economic')">ECONOMIC</button>
+    <button class="layer-tab"        data-layer="health"         onclick="switchLayer('health')">HEALTH</button>
+    <button class="layer-tab"        data-layer="economic"       onclick="switchLayer('economic')">ECONOMIC</button>
     <div class="layer-divider"></div>
-    <button class="layer-tab"        data-layer="equity"        onclick="switchLayer('equity')">◆ EQUITY SCORE</button>
+    <button class="layer-tab"        data-layer="equity"         onclick="switchLayer('equity')">◆ EQUITY SCORE</button>
+    <div class="agency-lens-group">
+      <span class="agency-lens-label">AGENCY LENS:</span>
+      <button class="agency-lens-btn active" data-lens="MOFP"  onclick="switchAgencyLens('MOFP')">MOFP</button>
+      <button class="agency-lens-btn"        data-lens="HPD"   onclick="switchAgencyLens('HPD')">HPD</button>
+      <button class="agency-lens-btn"        data-lens="DOHMH" onclick="switchAgencyLens('DOHMH')">DOHMH</button>
+    </div>
   </nav>
 
   <div id="main">
@@ -1671,6 +1712,40 @@ let currentFormat    = 'Memo';
 let map;
 let geojsonLayer     = null;
 let activeLayer      = 'food';
+let currentLens      = 'MOFP';
+
+// ── AGENCY LENSES ─────────────────────────────────────────────────────────────
+// Each lens pre-selects a layer and swaps in agency-specific context
+const AGENCY_LENSES = {
+  MOFP: {
+    label: "MAYOR'S OFFICE OF FOOD POLICY",
+    layer: 'food',
+  },
+  HPD: {
+    label: 'HOUSING PRESERVATION & DEVELOPMENT',
+    layer: 'housing',
+  },
+  DOHMH: {
+    label: 'DEPT OF HEALTH & MENTAL HYGIENE',
+    layer: 'health',
+  },
+};
+
+function switchAgencyLens(lens) {
+  currentLens = lens;
+  const cfg = AGENCY_LENSES[lens];
+
+  // Highlight active lens button
+  document.querySelectorAll('.agency-lens-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lens === lens);
+  });
+
+  // Update topbar agency label
+  document.getElementById('active-agency-label').textContent = cfg.label;
+
+  // Switch to the lens's default data layer
+  switchLayer(cfg.layer);
+}
 
 // ── LAYER HELPERS ─────────────────────────────────────────────────────────────
 function getDistrictLayerScore(d) {
@@ -1907,6 +1982,16 @@ function switchLayer(layer) {
   renderLayerChips();
   renderStatCards();
   if (selectedDistrict) renderDistrictDetail(selectedDistrict);
+
+  // Keep agency lens buttons in sync with manual layer tab clicks
+  const lensForLayer = Object.keys(AGENCY_LENSES).find(k => AGENCY_LENSES[k].layer === layer);
+  document.querySelectorAll('.agency-lens-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lens === lensForLayer);
+  });
+  if (lensForLayer) {
+    currentLens = lensForLayer;
+    document.getElementById('active-agency-label').textContent = AGENCY_LENSES[lensForLayer].label;
+  }
 }
 
 // ── GAP VIEW ─────────────────────────────────────────────────────────────────

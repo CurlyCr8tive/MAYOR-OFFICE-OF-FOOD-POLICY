@@ -1419,7 +1419,7 @@ html, body {
             <button class="qa-btn" onclick="sendChip('Find the neighborhoods with the worst pantry resource gaps')">🗺️ Resource Gaps</button>
             <button class="qa-btn" onclick="sendChip('Which populations are most at risk from eligibility changes?')">👥 At-Risk Groups</button>
           </div>
-          <button class="export-btn" onclick="exportPDF()">⬇ EXPORT DISTRICT BRIEF AS PDF</button>
+          <button class="export-btn" onclick="exportPDF()">⬇ EXPORT FULL DISTRICT BRIEF (PDF)</button>
         </div>
       </div>
 
@@ -2690,9 +2690,15 @@ function exportPDF() {
     return;
   }
 
-  const ind = d.indicators;
+  const ind       = d.indicators;
+  const ls        = LAYER_SCORES[d.fips] || {};
   const tierColors = { Critical: '#d32f2f', High: '#f57c00', Moderate: '#f9a825', Lower: '#388e3c' };
   const tierColor  = tierColors[d.risk_tier] || '#555';
+
+  // Compute composite equity score
+  const equityScore = Math.round(
+    (d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5
+  );
 
   // Grab last AI message text (strip HTML tags for clean print)
   const aiMsgs = document.querySelectorAll('.msg-ai .msg-bubble');
@@ -2700,33 +2706,54 @@ function exportPDF() {
     ? aiMsgs[aiMsgs.length - 1].innerText
     : 'No AI analysis generated yet. Use the AI assistant to generate a policy memo, then export.';
 
-  const indicators = [
-    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%' },
-    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%' },
-    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%' },
-    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%' },
-    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%' },
+  // Food vulnerability indicators
+  const foodIndicators = [
+    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%', suffix: '%' },
+    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%', suffix: '%' },
+    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%', suffix: '%' },
+    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%', suffix: '%' },
+    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%', suffix: '%' },
   ];
 
-  const indRows = indicators.map(i => `
+  const indRows = foodIndicators.map(i => `
     <div class="pr-indicator-row">
       <span>${i.label} <span style="color:#999;font-size:10px">(${i.weight})</span></span>
       <div class="pr-bar-bg">
         <div class="pr-bar-fill" style="width:${Math.min(i.val, 100)}%;background:${tierColor}"></div>
       </div>
-      <span class="pr-indicator-val">${i.val}%</span>
+      <span class="pr-indicator-val">${i.val}${i.suffix}</span>
     </div>`).join('');
+
+  // Multi-layer scorecard rows
+  const scorecardDims = [
+    { label: 'Food Vulnerability', score: Math.round(d.vulnerability_score), color: '#d32f2f' },
+    { label: 'Housing Stability',  score: ls.housing        || 50,           color: '#9c27b0' },
+    { label: 'Cost of Living',     score: ls.cost_of_living || 50,           color: '#ef6c00' },
+    { label: 'Health Burden',      score: ls.health         || 50,           color: '#1976d2' },
+    { label: 'Economic Stress',    score: ls.economic       || 50,           color: '#00897b' },
+  ];
+
+  const scorecardRows = scorecardDims.map(dim => `
+    <div class="pr-indicator-row">
+      <span style="min-width:130px">${dim.label}</span>
+      <div class="pr-bar-bg">
+        <div class="pr-bar-fill" style="width:${dim.score}%;background:${dim.color}"></div>
+      </div>
+      <span class="pr-indicator-val" style="color:${dim.color}">${dim.score}/100</span>
+    </div>`).join('');
+
+  const agencyLabel = AGENCY_LENSES[currentLens]?.label || "NYC Mayor's Office of Food Policy";
 
   document.getElementById('print-report').innerHTML = `
     <div class="pr-header">
-      <div class="pr-agency">NYC Mayor's Office of Food Policy · Community District Report</div>
+      <div class="pr-agency">${agencyLabel} · Community District Report</div>
       <div class="pr-title">${d.cd_name}, ${d.borough}</div>
-      <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · NYC Food Insecurity Vulnerability Dashboard</div>
+      <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · The Grid NYC — Neighborhood Intelligence Platform</div>
     </div>
 
     <div class="pr-score-block tier-${d.risk_tier}">
       <div>
-        <div class="pr-score-label">Vulnerability Score</div>
+        <div class="pr-score-label">Food Vulnerability Score</div>
         <div class="pr-score-num">${d.vulnerability_score}</div>
       </div>
       <div>
@@ -2734,16 +2761,24 @@ function exportPDF() {
         <div class="pr-tier-badge" style="background:${tierColor};color:#fff">${d.risk_tier.toUpperCase()}</div>
         <div class="pr-score-label" style="margin-top:8px">Community District ${d.fips}</div>
       </div>
+      <div>
+        <div class="pr-score-label">Equity Score (Composite)</div>
+        <div class="pr-score-num" style="color:#888">${equityScore}</div>
+        <div class="pr-score-label">5-dimension average</div>
+      </div>
     </div>
 
-    <div class="pr-section-title">Vulnerability Indicators</div>
+    <div class="pr-section-title">Multi-Dimensional District Scorecard</div>
+    ${scorecardRows}
+
+    <div class="pr-section-title">Food Vulnerability Indicators</div>
     ${indRows}
 
     <div class="pr-section-title">AI Policy Analysis</div>
     <div class="pr-memo">${lastAI}</div>
 
     <div class="pr-footer">
-      <span>NYC Mayor's Office of Food Policy · Food Insecurity Vulnerability Dashboard</span>
+      <span>${agencyLabel} · The Grid NYC</span>
       <span>Confidential — Pre-decisional · ${new Date().toLocaleDateString()}</span>
     </div>
   `;

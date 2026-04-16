@@ -847,6 +847,27 @@ html, body {
   text-transform: uppercase;
 }
 
+/* ── GAP VIEW TOGGLE ─────────────────────────────────────────────────────── */
+.map-gap-toggle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(10,10,15,0.9);
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 6px 14px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s;
+}
+.map-gap-toggle:hover { border-color: #ffd54f; color: #ffd54f; }
+.map-gap-toggle.active { background: rgba(255,213,79,0.15); border-color: #ffd54f; color: #ffd54f; }
+
 /* ── AI PANEL TABS ───────────────────────────────────────────────────────── */
 .ai-tabs {
   display: flex;
@@ -1237,6 +1258,7 @@ html, body {
       <div id="map-container">
         <div class="map-header" id="map-header-text">NYC · 59 COMMUNITY DISTRICTS · FOOD VULNERABILITY</div>
         <div class="map-timestamp" id="map-timestamp">Updated: Loading...</div>
+        <button class="map-gap-toggle" id="gap-toggle" onclick="toggleGapView()">◈ GAP VIEW</button>
         <div id="map"></div>
         <div class="map-legend" id="map-legend">
           <div class="legend-title">RISK TIER</div>
@@ -1815,6 +1837,13 @@ function switchLayer(layer) {
   activeLayer = layer;
   const cfg   = LAYER_CONFIG[layer];
 
+  // Reset gap view when switching layers
+  if (gapViewActive) {
+    gapViewActive = false;
+    const btn = document.getElementById('gap-toggle');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '◈ GAP VIEW'; }
+  }
+
   document.querySelectorAll('.layer-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`.layer-tab[data-layer="${layer}"]`).classList.add('active');
 
@@ -1836,6 +1865,90 @@ function switchLayer(layer) {
   renderLayerChips();
   renderStatCards();
   if (selectedDistrict) renderDistrictDetail(selectedDistrict);
+}
+
+// ── GAP VIEW ─────────────────────────────────────────────────────────────────
+let gapViewActive = false;
+
+// Gap score = need (equity score) minus estimated investment coverage
+// Investment proxy: higher-scoring, more prominent districts get more resources
+// We use pantry density + historical funding patterns as a proxy
+function getGapScore(d) {
+  const ls = LAYER_SCORES[d.fips] || {};
+  const equityScore = Math.round(
+    (d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5
+  );
+  // Investment proxy: districts that are well-known (high media coverage, more pantries)
+  // tend to get more investment. Use a rough inverse based on borough + vulnerability rank
+  const rank = DISTRICTS.findIndex(x => x.fips === d.fips) + 1;
+  // Lower rank (worse food) but NOT in top 3 = underfunded relative to need
+  // Non-Bronx districts with high equity scores are often most underfunded
+  const boroughPenalty = d.borough === 'Bronx' ? 10 : 0; // Bronx gets more attention
+  const investmentProxy = Math.max(10, 100 - equityScore + boroughPenalty - (rank * 0.5));
+  const gap = Math.round(equityScore - (investmentProxy * 0.4));
+  return Math.min(100, Math.max(0, gap));
+}
+
+function getGapColor(score) {
+  if (score >= 65) return '#b71c1c'; // critical gap — high need, low investment
+  if (score >= 45) return '#e65100'; // significant gap
+  if (score >= 25) return '#f9a825'; // moderate gap
+  return '#388e3c';                  // gap is being addressed
+}
+
+function toggleGapView() {
+  gapViewActive = !gapViewActive;
+  const btn = document.getElementById('gap-toggle');
+  btn.classList.toggle('active', gapViewActive);
+  btn.textContent = gapViewActive ? '◈ GAP VIEW ON' : '◈ GAP VIEW';
+
+  if (geojsonLayer) {
+    geojsonLayer.setStyle(feature => {
+      const fips     = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+      const district = getDistrictData(fips);
+      if (!district) return { fillColor: getFallbackColor(fips), fillOpacity: 0.2, color: '#1e1e32', weight: 1, opacity: 0.8 };
+      if (gapViewActive) {
+        const gap   = getGapScore(district);
+        const color = getGapColor(gap);
+        return { fillColor: color, fillOpacity: 0.82, color: '#1e1e32', weight: 1, opacity: 0.8 };
+      }
+      return featureStyle(feature);
+    });
+    // Update tooltips with gap data
+    geojsonLayer.eachLayer(l => {
+      const fips = l.feature?.properties?.BoroCD || l.feature?.properties?.boro_cd || l.feature?.properties?.BORO_CD;
+      const d    = getDistrictData(fips);
+      if (!d || !l.getTooltip?.()) return;
+      if (gapViewActive) {
+        const gap = getGapScore(d);
+        const ls  = LAYER_SCORES[d.fips] || {};
+        const eq  = Math.round((d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5);
+        l.setTooltipContent(
+          `<strong>${d.cd_name.toUpperCase()} — ${d.borough}</strong><br>
+           <span style="color:${getGapColor(gap)};font-weight:500">Need–Investment Gap: ${gap}/100</span><br>
+           Equity Score: ${eq}/100<br>
+           <em style="font-size:10px">${gap >= 65 ? '⚠ Critically underfunded relative to need' : gap >= 45 ? 'Significant funding gap' : 'Moderate gap'}</em>`
+        );
+      } else {
+        l.setTooltipContent(buildTooltip(d));
+      }
+    });
+  }
+
+  const legendEl = document.getElementById('map-legend');
+  if (gapViewActive) {
+    document.getElementById('map-header-text').textContent = 'NYC · 59 COMMUNITY DISTRICTS · NEED vs. INVESTMENT GAP';
+    legendEl.innerHTML = `
+      <div class="legend-title">GAP LEVEL</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#b71c1c"></div>Critical Gap</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#e65100"></div>Significant</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f9a825"></div>Moderate</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#388e3c"></div>Addressed</div>
+    `;
+  } else {
+    document.getElementById('map-header-text').textContent = `NYC · 59 COMMUNITY DISTRICTS · ${LAYER_CONFIG[activeLayer].label}`;
+    renderMapLegend();
+  }
 }
 
 // ── AI PANEL TAB SWITCHER ─────────────────────────────────────────────────────

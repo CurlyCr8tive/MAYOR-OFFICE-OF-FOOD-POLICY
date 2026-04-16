@@ -847,6 +847,41 @@ html, body {
   text-transform: uppercase;
 }
 
+/* ── DISTRICT SCORECARD ──────────────────────────────────────────────────── */
+.scorecard-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.scorecard-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.scorecard-track {
+  height: 8px;
+  background: var(--bg-raised);
+  position: relative;
+  overflow: hidden;
+}
+.scorecard-fill {
+  height: 100%;
+  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.scorecard-val {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+.scorecard-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 6px 0;
+}
+
 /* ── GAP VIEW TOGGLE ─────────────────────────────────────────────────────── */
 .map-gap-toggle {
   position: absolute;
@@ -1271,12 +1306,19 @@ html, body {
       </div>
 
       <div id="bottom-panels">
-        <!-- District Detail -->
+        <!-- District Scorecard -->
         <div class="bottom-panel">
-          <div class="panel-title">DISTRICT DETAIL — <span id="detail-name">Select a district</span></div>
+          <div class="panel-title">DISTRICT SCORECARD — <span id="detail-name">Select a district</span></div>
+          <div id="scorecard-dimensions" style="display:none">
+            <div class="scorecard-row" id="sc-food"></div>
+            <div class="scorecard-row" id="sc-housing"></div>
+            <div class="scorecard-row" id="sc-cost"></div>
+            <div class="scorecard-row" id="sc-health"></div>
+            <div class="scorecard-row" id="sc-economic"></div>
+          </div>
           <div id="detail-bars">
             <div style="color:var(--text-dim);font-size:11px;padding-top:16px;">
-              Click a district on the map or list to view indicators
+              Click a district on the map or list to view its scorecard
             </div>
           </div>
           <div class="trend-area" id="trend-area" style="display:none">
@@ -2154,9 +2196,43 @@ document.getElementById('search-input').addEventListener('input', e => {
 function selectDistrict(d) {
   selectedDistrict = d;
   renderDistrictList(currentFilter, document.getElementById('search-input').value);
+  renderScorecard(d);
   renderDistrictDetail(d);
   document.getElementById('trend-area').style.display = 'block';
   drawTrendChart(d);
+}
+
+function renderScorecard(d) {
+  const ls  = LAYER_SCORES[d.fips] || {};
+  const eq  = Math.round((d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5);
+
+  const dims = [
+    { id:'sc-food',     label:'FOOD',         score: Math.round(d.vulnerability_score), color:'#d32f2f' },
+    { id:'sc-housing',  label:'HOUSING',       score: ls.housing       || 50,            color:'#9c27b0' },
+    { id:'sc-cost',     label:'COST OF LIVING',score: ls.cost_of_living|| 50,            color:'#ef6c00' },
+    { id:'sc-health',   label:'HEALTH',        score: ls.health        || 50,            color:'#1976d2' },
+    { id:'sc-economic', label:'ECONOMIC',      score: ls.economic      || 50,            color:'#00897b' },
+  ];
+
+  document.getElementById('scorecard-dimensions').style.display = 'block';
+
+  dims.forEach(dim => {
+    const el = document.getElementById(dim.id);
+    el.innerHTML = `
+      <div class="scorecard-label">${dim.label}</div>
+      <div class="scorecard-track">
+        <div class="scorecard-fill" style="width:0%;background:${dim.color}" data-target="${dim.score}"></div>
+      </div>
+      <div class="scorecard-val" style="color:${dim.color}">${dim.score}</div>
+    `;
+  });
+
+  // Animate scorecard bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.scorecard-fill').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  });
 }
 
 function renderDistrictDetail(d) {

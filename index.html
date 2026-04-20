@@ -2598,14 +2598,57 @@ async function sendMessage() {
     removeTyping();
     // Fallback responses for demo
     const fallbacks = {
-      'snap work requirements': 'The 8 Critical districts face compounding exposure from work requirements. University Heights (73% SNAP, 28% non-citizen) and Morrisania (73.8% SNAP) are highest risk. New ABAWD requirements taking effect March 2026 will impact ~340,000 NYC recipients.<br><br><span style="color:#ff4d1c">→</span> Prioritize outreach in Mott Haven and Morrisania<br><span style="color:#ff4d1c">→</span> Emergency CFC allocation for Bronx districts<br><span style="color:#ff4d1c">→</span> Launch mobile pantry in University Heights',
-      'pantry gap': 'Worst pantry coverage gaps per food insecure resident:<br>1. East Tremont — 2.1 pantries per 10k<br>2. Brownsville — 2.4 per 10k<br>3. Hunts Point — 2.8 per 10k<br><br><span style="color:#ff4d1c">→</span> Recommend 3 new CFC sites in East Tremont<br><span style="color:#ff4d1c">→</span> Deploy mobile markets to Brownsville Saturdays',
-      'policy memo': 'PRIORITY MEMO: Bronx Food Security Crisis<br>7 of 8 Critical districts are in the Bronx. Average SNAP enrollment: 68.4%. Combined population at risk: ~340,000 residents.<br><br>Recommended: $2.3M emergency pantry investment targeting Mott Haven, Morrisania, and East Tremont.<br>Projected impact: Coverage gap reduced 40% within 6 months.',
-      'predict': 'Federal SNAP cut impact projection for NYC:<br>• 1.8M current recipients, ~340k at risk of ineligibility<br>• Bronx Critical districts will absorb 60% of new pantry demand<br>• Brownsville pantries projected to exceed capacity by March 2026<br><br><span style="color:#ff4d1c">→</span> Pre-position emergency food reserves now',
+      'snap work requirements': (
+        'ABAWD work requirements take effect March 2026 across NYC\'s 1.8M SNAP recipients.<br><br>' +
+        'Highest-exposure Critical districts (Bronx):<br>' +
+        '• Mott Haven — 51.5% SNAP enrollment, 15.1% non-citizen (already ineligible for federal SNAP)<br>' +
+        '• East Tremont — 44.9% SNAP, 15.4% non-citizen<br>' +
+        '• University Heights — 44.9% SNAP, 27.6% non-citizen — largest hidden unmet-need gap<br>' +
+        '• Morrisania — 46.7% SNAP, 15.4% non-citizen<br><br>' +
+        'Estimated ABAWD exposure: 18–22% of adult recipients in high-unemployment districts.<br><br>' +
+        '<span style="color:#ff4d1c">→</span> File CFC emergency allocation request now — requires 30%+ pantry utilization documentation<br>' +
+        '<span style="color:#ff4d1c">→</span> Deploy mobile food markets to University Heights (highest non-citizen gap)<br>' +
+        '<span style="color:#ff4d1c">→</span> Co-locate SNAP-Ed outreach at East Tremont and Morrisania pantry sites'
+      ),
+      'pantry gap': (
+        'Pantry coverage gaps by Critical district (pantries per 10k food-insecure residents):<br>' +
+        '• East Tremont — 2.1 / 10k · 44.9% SNAP · rent burden 60.6%<br>' +
+        '• Mott Haven — mapped coverage but at estimated capacity given 51.5% SNAP rate<br>' +
+        '• Brownsville — 2.4 / 10k · city\'s highest housing stress score (85)<br><br>' +
+        'Note: Jackson Heights (15.3% SNAP but 33.3% non-citizen, 58.7% rent burden) is likely severely undercounted — high need invisible to federal enrollment data.<br><br>' +
+        '<span style="color:#ff4d1c">→</span> Recommend 3 new CFC sites in East Tremont corridor<br>' +
+        '<span style="color:#ff4d1c">→</span> Deploy Saturday mobile markets to Brownsville (Brooklyn CD 16)<br>' +
+        '<span style="color:#ff4d1c">→</span> Add Jackson Heights to HPD + MOFP joint outreach target list'
+      ),
+      'policy memo': (
+        'PRIORITY MEMO — Bronx Food Security Crisis<br><br>' +
+        '7 of 8 Critical-tier districts are in the Bronx. Verified indicators from ACS data:<br>' +
+        '• Mott Haven: 51.5% SNAP, 62.0% child poverty, 61.9% rent burden<br>' +
+        '• East Tremont: 44.9% SNAP, 55.3% child poverty, 60.6% rent burden<br>' +
+        '• University Heights: 44.9% SNAP, 39.8% child poverty, 27.6% non-citizen<br><br>' +
+        'Recommended: $2.3M emergency CFC allocation targeting Mott Haven, Morrisania, and East Tremont.<br>' +
+        'Projected impact: pantry capacity gap reduced ~40% within 6 months if deployed via existing CFC partners.<br><br>' +
+        '<span style="color:#ff4d1c">→</span> TODAY: Submit CFC emergency allocation request with utilization documentation'
+      ),
+      'predict': (
+        'Federal SNAP cut impact projection — NYC:<br>' +
+        '• 1.8M current recipients citywide<br>' +
+        '• ~340K at risk of ineligibility under ABAWD work requirements (March 2026)<br>' +
+        '• Bronx Critical districts projected to absorb 55–65% of surge pantry demand<br>' +
+        '• Brownsville (Brooklyn CD 16): housing stress score 85, pantry coverage already thin at 2.4/10k<br>' +
+        '• Non-citizen households (e.g., 33.3% of Jackson Heights, 27.6% of University Heights) are already excluded from federal SNAP — they represent the invisible baseline need that will grow with any federal rollback<br><br>' +
+        '<span style="color:#ff4d1c">→</span> Pre-position emergency EFAP food reserves at 7 Bronx Critical district pantries before Q1 2026<br>' +
+        '<span style="color:#ff4d1c">→</span> Brief HRA commissioner on non-citizen gap in Queens as secondary priority'
+      ),
     };
 
     const key = Object.keys(fallbacks).find(k => text.toLowerCase().includes(k));
-    addMessage('ai', key ? fallbacks[key] : 'Based on current vulnerability data, the Bronx districts require immediate attention. University Heights (91.2) leads all 59 community districts. Federal cuts will disproportionately impact the 8 Critical-tier neighborhoods. Recommend focusing resources on pantry capacity expansion and SNAP outreach in underserved Bronx communities.');
+    addMessage('ai', key ? fallbacks[key] : (
+      'Current dashboard status: 7 Critical-tier districts in the Bronx, 1 in Brooklyn (Brownsville). ' +
+      'Mott Haven leads at 89.1 vulnerability score — 51.5% SNAP enrollment, 62.0% child poverty, 61.9% rent burden. ' +
+      '$186B in federal SNAP cuts incoming; March 2026 ABAWD work requirements will hit high-unemployment Bronx districts hardest. ' +
+      'Select a district on the map or list for a specific analysis, or ask about a policy scenario.'
+    ));
   }
 }
 

@@ -117,6 +117,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             pantry_data    = payload.get("pantryData", [])
             response_fmt   = payload.get("responseFormat", "Memo")
             active_layer   = payload.get("activeLayer", "food")
+            agency_lens    = payload.get("agencyLens", "MOFP")
             layer_scores   = payload.get("layerScores", {})
 
             if not messages:
@@ -139,6 +140,58 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 f"\n\nACTIVE DATA LAYER: {layer_labels.get(active_layer, active_layer)}. "
                 "Lead your analysis with indicators relevant to this layer."
             )
+
+            # Agency lens context — program knowledge specific to the requesting agency
+            agency_context = {
+                "MOFP": (
+                    "AGENCY CONTEXT — Mayor's Office of Food Policy (MOFP): "
+                    "You are advising food policy planners. Reference these specific programs and mechanisms: "
+                    "EFAP (Emergency Food Assistance Program) — federal pass-through, allocated by state to city; "
+                    "CFC (City Funding for Community Organizations) — city discretionary, faster to deploy than federal; "
+                    "SNAP-Ed — nutrition education tied to SNAP enrollment, can be co-located with pantries; "
+                    "HRA Food Pantry Program — city-run network supplementing CFC partners; "
+                    "Mobile food markets — can be deployed within 2–4 weeks with HRA approval. "
+                    "Key threshold: CFC emergency allocation requires documented 30%+ surge in pantry utilization. "
+                    "Non-citizen households (cannot access federal SNAP) rely entirely on EFAP and CFC — "
+                    "always flag non-citizen % as a hidden floor of unmet need beyond SNAP enrollment numbers. "
+                    "ABAWD (Able-Bodied Adults Without Dependents) work requirements take effect March 2026 — "
+                    "estimate ABAWD exposure as roughly 18–22% of adult SNAP recipients in high-unemployment districts."
+                ),
+                "HPD": (
+                    "AGENCY CONTEXT — Dept of Housing Preservation & Development (HPD): "
+                    "You are advising housing preservation planners. Reference these specific programs: "
+                    "Right to Counsel (RTC) — free legal representation for tenants in housing court, "
+                    "available city-wide since 2022, reduces eviction rates ~40% where utilized; "
+                    "SCRIE/DRIE — rent freeze for seniors/disabled on fixed income, underutilized in high-need CDs; "
+                    "NYCHA — public housing authority managing ~177K units; "
+                    "HPD Class C violations (immediately hazardous) must be corrected within 24 hours by law — "
+                    "heat failures, lead paint (units with children under 6), vermin, mold, sewage; "
+                    "Class B (hazardous) within 30 days; Class A (non-hazardous) within 90 days. "
+                    "Key correlation: districts with rent burden >55% AND high non-citizen % systematically "
+                    "under-report violations due to documentation fear — treat these as hidden high-violation zones. "
+                    "When citing housing stress, connect to food insecurity cascade: "
+                    "heat failure → utility debt → food budget compression; "
+                    "mold/roach → food contamination + asthma → medical debt → SNAP dependency."
+                ),
+                "DOHMH": (
+                    "AGENCY CONTEXT — Dept of Health & Mental Hygiene (DOHMH): "
+                    "You are advising public health planners. Reference these specific programs and data: "
+                    "Health Bucks — $2 coupons redeemable at farmers markets, doubled for SNAP users, "
+                    "underutilized in districts farthest from greenmarkets; "
+                    "Fresh program — zoning incentives for grocery stores in underserved areas; "
+                    "Health Home program — care coordination for high-utilizers, often food-insecure; "
+                    "DOHMH Community Health Survey — district-level chronic disease prevalence data. "
+                    "Key health-food links to cite: "
+                    "NYC life expectancy gap is 10 years between lowest-income CDs (Bronx ~76) and "
+                    "highest-income CDs (UES Manhattan ~86); "
+                    "asthma hospitalization rates in Mott Haven/East Tremont are 3–4× city average — "
+                    "driven by mold/roach violations in housing stock; "
+                    "Type 2 diabetes prevalence tracks SNAP enrollment at ~0.74 correlation city-wide; "
+                    "food insecurity is a clinical risk factor — ask about FQHC (Federally Qualified Health Centers) "
+                    "co-location with food pantries as an intervention model."
+                ),
+            }
+            system += f"\n\n{agency_context.get(agency_lens, agency_context['MOFP'])}"
 
             # 1. Selected district — full live indicators + multi-layer scores
             if district_data:

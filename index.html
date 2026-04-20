@@ -2504,17 +2504,7 @@ function loadCommunityDistrictGeoJSON() {
 }
 
 // ── AI CHAT ───────────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are an AI food policy analyst for the NYC Mayor's Office of Food Policy.
-You have access to vulnerability data for all 59 NYC community districts.
-
-Key data: 8 Critical districts (all Bronx except Brownsville Brooklyn).
-Top critical: University Heights 91.2, Morrisania 88.6, Mott Haven 87.5, East Tremont 86.4, Hunts Point 84.6.
-Federal context: $186B SNAP cuts incoming, 1.8M NYC SNAP recipients at risk, work requirements March 2026.
-Pantry data: 700+ CFC-funded pantries, worst gaps in East Tremont (2.1 per 10k), Brownsville (2.4 per 10k).
-
-Keep responses concise, data-specific, and actionable for city planners.
-Format recommendations with → arrows. Be direct, avoid generic statements.`;
-
+// System prompt is built and injected server-side in main.py — not here.
 let chatHistory = [];
 
 function addMessage(role, content, animate = true) {

@@ -238,13 +238,18 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 system += f"\n\nCITY VULNERABILITY RANKING (top 10 of 59): {ranking_lines}"
 
-            # 3. Pantry coverage by area
+            # 3. Pantry density by Critical/High district (worst coverage first)
             if pantry_data:
-                pantry_lines = ", ".join(
-                    f"{p.get('name')} ({p.get('count')} pantry{'s' if p.get('count',1)>1 else ''})"
+                pantry_lines = " | ".join(
+                    f"{p.get('district')} ({p.get('borough')}): "
+                    f"{p.get('density')}/10k food-insecure [{p.get('utilization')}]"
                     for p in pantry_data
                 )
-                system += f"\n\nPANTRY COVERAGE (mapped locations): {pantry_lines}"
+                system += (
+                    f"\n\nPANTRY DENSITY BY DISTRICT (Critical/High only, worst first): {pantry_lines}. "
+                    "Density = pantries per 10k SNAP-enrolled residents. "
+                    "'at capacity' = <2.0/10k, 'near capacity' = 2.0–3.0/10k."
+                )
 
             # 4. Response format instruction
             fmt_instruction = FORMAT_INSTRUCTIONS.get(response_fmt, FORMAT_INSTRUCTIONS["Memo"])

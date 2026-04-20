@@ -2212,11 +2212,27 @@ const TOP10_DISTRICTS = DISTRICTS.slice(0, 10).map((d, i) => ({
   rank:    i + 1,
 }));
 
-// Pantry coverage grouped by area name
+// Pantry density per Critical/High district — pantries per 10k food-insecure residents.
+// Estimated food-insecure population = district SNAP enrollment % × ~30k avg CD population.
+// Lower density = higher gap. Sent to AI as actionable coverage context.
 const PANTRY_COVERAGE = (() => {
-  const counts = {};
-  PANTRIES.forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
-  return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  const boroughPantryCount = { 'Bronx': 7, 'Brooklyn': 4, 'Manhattan': 4, 'Queens': 1, 'Staten Island': 1 };
+  return DISTRICTS
+    .filter(d => d.risk_tier === 'Critical' || d.risk_tier === 'High')
+    .map(d => {
+      const pantries     = boroughPantryCount[d.borough] || 1;
+      const snapPop      = Math.round((d.indicators.snap_household_pct / 100) * 30000);
+      const density      = snapPop > 0 ? parseFloat((pantries / snapPop * 10000).toFixed(1)) : 0;
+      const utilization  = density < 2 ? 'at capacity' : density < 3 ? 'near capacity' : 'adequate';
+      return {
+        district: d.cd_name,
+        borough:  d.borough,
+        pantries,
+        density,
+        utilization,
+      };
+    })
+    .sort((a, b) => a.density - b.density); // worst coverage first
 })();
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────────

@@ -1827,44 +1827,44 @@ function getLayerIndicators(district) {
   if (activeLayer === 'housing') {
     const s = ls.housing || 50;
     return [
-      { label:'Housing Stress Index',  val: s,                                    max: 100, color:'#9c27b0', suffix:'/100' },
-      { label:'HPD Violations /1k',    val: Math.round(s * 0.75 + 5),             max: 80,  color:'#ab47bc', suffix:'' },
-      { label:'Displacement Risk',     val: Math.round(s * 0.9),                  max: 100, color:'#ce93d8', suffix:'/100' },
+      { label:'Housing Stress Index',  val: s,                                    max: 100, color:'#9c27b0', suffix:'/100', modeled: true },
+      { label:'HPD Violations /1k',    val: Math.round(s * 0.75 + 5),             max: 80,  color:'#ab47bc', suffix:'',     modeled: true },
+      { label:'Displacement Risk',     val: Math.round(s * 0.9),                  max: 100, color:'#ce93d8', suffix:'/100', modeled: true },
       { label:'Rent Burden',           val: district.indicators.rent_burden_pct,  max: 65,  color:'#ba68c8', suffix:'%' },
-      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),    max: 20,  color:'#9c27b0', suffix:'' },
+      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),    max: 20,  color:'#9c27b0', suffix:'',     modeled: true },
     ];
   }
 
   if (activeLayer === 'cost_of_living') {
     const s = ls.cost_of_living || 50;
     return [
-      { label:'Cost Pressure Index', val: s,                                       max: 100,  color:'#ef6c00', suffix:'/100' },
-      { label:'Median Rent',         val: Math.round(800 + s * 22),                max: 4000, color:'#f57c00', suffix:'/mo', prefix:'$' },
-      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),       max: 15,   color:'#ffa726', suffix:'%' },
+      { label:'Cost Pressure Index', val: s,                                       max: 100,  color:'#ef6c00', suffix:'/100', modeled: true },
+      { label:'Median Rent',         val: Math.round(800 + s * 22),                max: 4000, color:'#f57c00', suffix:'/mo', prefix:'$', modeled: true },
+      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),       max: 15,   color:'#ffa726', suffix:'%',   modeled: true },
       { label:'Rent Burden',         val: district.indicators.rent_burden_pct,     max: 65,   color:'#ff9800', suffix:'%' },
-      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),       max: 15,   color:'#ffb74d', suffix:'%' },
+      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),       max: 15,   color:'#ffb74d', suffix:'%',   modeled: true },
     ];
   }
 
   if (activeLayer === 'health') {
     const s = ls.health || 50;
     return [
-      { label:'Health Burden Index',  val: s,                                      max: 100, color:'#1976d2', suffix:'/100' },
-      { label:'Life Expectancy',      val: parseFloat((85 - s * 0.12).toFixed(1)), max: 85,  color:'#42a5f5', suffix:' yrs' },
-      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),      max: 35,  color:'#64b5f6', suffix:'%' },
-      { label:'Asthma Rate /10k',     val: Math.round(s * 1.2),                    max: 120, color:'#1976d2', suffix:'' },
-      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),              max: 100, color:'#90caf9', suffix:'/100' },
+      { label:'Health Burden Index',  val: s,                                      max: 100, color:'#1976d2', suffix:'/100', modeled: true },
+      { label:'Life Expectancy',      val: parseFloat((85 - s * 0.12).toFixed(1)), max: 85,  color:'#42a5f5', suffix:' yrs', modeled: true },
+      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),      max: 35,  color:'#64b5f6', suffix:'%',    modeled: true },
+      { label:'Asthma Rate /10k',     val: Math.round(s * 1.2),                    max: 120, color:'#1976d2', suffix:'',     modeled: true },
+      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),              max: 100, color:'#90caf9', suffix:'/100', modeled: true },
     ];
   }
 
   if (activeLayer === 'economic') {
     const s = ls.economic || 50;
     return [
-      { label:'Economic Stress Index', val: s,                                      max: 100, color:'#00897b', suffix:'/100' },
-      { label:'Median Income',         val: Math.round(120 - s * 0.7),              max: 100, color:'#26a69a', suffix:'k', prefix:'$' },
+      { label:'Economic Stress Index', val: s,                                      max: 100, color:'#00897b', suffix:'/100', modeled: true },
+      { label:'Median Income',         val: Math.round(120 - s * 0.7),              max: 100, color:'#26a69a', suffix:'k', prefix:'$', modeled: true },
       { label:'Unemployment',          val: district.indicators.unemployment_pct,   max: 20,  color:'#4db6ac', suffix:'%' },
-      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),       max: 15,  color:'#00897b', suffix:'%/yr' },
-      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),              max: 75,  color:'#80cbc4', suffix:'%' },
+      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),      max: 15,  color:'#00897b', suffix:'%/yr', modeled: true },
+      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),              max: 75,  color:'#80cbc4', suffix:'%',    modeled: true },
     ];
   }
 
@@ -2326,18 +2326,29 @@ function renderDistrictDetail(d) {
   const barsContainer = document.getElementById('detail-bars');
   barsContainer.innerHTML = '';
 
-  getLayerIndicators(d).forEach(ind => {
+  const indicators = getLayerIndicators(d);
+  const hasModeled = activeLayer !== 'food' && activeLayer !== 'equity' &&
+                     indicators.some(i => i.modeled);
+
+  if (hasModeled) {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:10px;color:var(--text-dim);margin-bottom:7px;letter-spacing:0.5px;';
+    note.textContent = '~ modeled estimate · ACS-verified indicators unmarked';
+    barsContainer.appendChild(note);
+  }
+
+  indicators.forEach(ind => {
     const pct        = Math.min((ind.val / ind.max) * 100, 100);
     const displayVal = (ind.prefix || '') + ind.val + (ind.suffix || '');
     const row = document.createElement('div');
     row.className = 'indicator-row';
     row.innerHTML = `
-      <div class="indicator-label">${ind.label}</div>
+      <div class="indicator-label" style="${ind.modeled ? 'color:var(--text-dim)' : ''}">${ind.modeled ? '~\u202f' : ''}${ind.label}</div>
       <div class="indicator-track">
-        <div class="indicator-fill" style="width:0%;background:${ind.color}"
+        <div class="indicator-fill" style="width:0%;background:${ind.color};${ind.modeled ? 'opacity:0.6' : ''}"
              data-target="${pct.toFixed(1)}"></div>
       </div>
-      <div class="indicator-pct" style="color:${ind.color}">${displayVal}</div>
+      <div class="indicator-pct" style="color:${ind.color};${ind.modeled ? 'opacity:0.7' : ''}">${displayVal}</div>
     `;
     barsContainer.appendChild(row);
   });

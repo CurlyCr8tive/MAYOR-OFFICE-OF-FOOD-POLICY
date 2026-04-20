@@ -256,7 +256,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
                 result = client.messages.create(
                     model="claude-opus-4",
-                    max_tokens=800,
+                    max_tokens=1200,
                     system=system,
                     messages=messages,
                 )
@@ -267,7 +267,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 # Fall back to raw HTTP if the package isn't available
                 req_body = json.dumps({
                     "model": "claude-opus-4",
-                    "max_tokens": 800,
+                    "max_tokens": 1200,
                     "system": system,
                     "messages": messages,
                 }).encode()

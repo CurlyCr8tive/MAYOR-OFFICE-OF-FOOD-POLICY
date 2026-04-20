@@ -1747,14 +1747,32 @@ function switchAgencyLens(lens) {
   switchLayer(cfg.layer);
 }
 
+// ── LENS-WEIGHTED EQUITY SCORE ────────────────────────────────────────────────
+// Each agency lens weights the 5 dimensions differently.
+// MOFP leads with food, HPD leads with housing, DOHMH leads with health.
+const LENS_WEIGHTS = {
+  MOFP:  { food: 0.40, housing: 0.15, cost_of_living: 0.15, health: 0.15, economic: 0.15 },
+  HPD:   { food: 0.15, housing: 0.40, cost_of_living: 0.20, health: 0.10, economic: 0.15 },
+  DOHMH: { food: 0.15, housing: 0.15, cost_of_living: 0.15, health: 0.40, economic: 0.15 },
+  _flat: { food: 0.20, housing: 0.20, cost_of_living: 0.20, health: 0.20, economic: 0.20 },
+};
+
+function computeEquityScore(d, lens) {
+  const w  = LENS_WEIGHTS[lens] || LENS_WEIGHTS._flat;
+  const ls = LAYER_SCORES[d.fips] || {};
+  return Math.round(
+    d.vulnerability_score       * w.food +
+    (ls.housing        || 50)   * w.housing +
+    (ls.cost_of_living || 50)   * w.cost_of_living +
+    (ls.health         || 50)   * w.health +
+    (ls.economic       || 50)   * w.economic
+  );
+}
+
 // ── LAYER HELPERS ─────────────────────────────────────────────────────────────
 function getDistrictLayerScore(d) {
   if (activeLayer === 'food') return d.vulnerability_score;
-  if (activeLayer === 'equity') {
-    const s = LAYER_SCORES[d.fips];
-    if (!s) return Math.round(d.vulnerability_score * 0.6);
-    return Math.round((d.vulnerability_score + s.housing + s.cost_of_living + s.health + s.economic) / 5);
-  }
+  if (activeLayer === 'equity') return computeEquityScore(d, currentLens);
   const s = LAYER_SCORES[d.fips];
   return s ? s[activeLayer] : Math.round(d.vulnerability_score * 0.6);
 }
@@ -2001,16 +2019,9 @@ let gapViewActive = false;
 // Investment proxy: higher-scoring, more prominent districts get more resources
 // We use pantry density + historical funding patterns as a proxy
 function getGapScore(d) {
-  const ls = LAYER_SCORES[d.fips] || {};
-  const equityScore = Math.round(
-    (d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5
-  );
-  // Investment proxy: districts that are well-known (high media coverage, more pantries)
-  // tend to get more investment. Use a rough inverse based on borough + vulnerability rank
+  const equityScore = computeEquityScore(d, currentLens);
   const rank = DISTRICTS.findIndex(x => x.fips === d.fips) + 1;
-  // Lower rank (worse food) but NOT in top 3 = underfunded relative to need
-  // Non-Bronx districts with high equity scores are often most underfunded
-  const boroughPenalty = d.borough === 'Bronx' ? 10 : 0; // Bronx gets more attention
+  const boroughPenalty = d.borough === 'Bronx' ? 10 : 0;
   const investmentProxy = Math.max(10, 100 - equityScore + boroughPenalty - (rank * 0.5));
   const gap = Math.round(equityScore - (investmentProxy * 0.4));
   return Math.min(100, Math.max(0, gap));
@@ -2117,14 +2128,11 @@ function runScenario() {
   const raw    = document.getElementById('scenario-budget-input').value;
   const budget = parseInt(raw.replace(/[^0-9]/g, '')) || 1000000;
 
-  // Compute priority score per district using active layer + equity composite
+  // Compute priority score per district using lens-weighted equity + active layer
   const scored = DISTRICTS.map(d => {
-    const ls = LAYER_SCORES[d.fips] || {};
-    const equityScore = Math.round(
-      (d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5
-    );
+    const equityScore = computeEquityScore(d, currentLens);
     const layerScore  = getDistrictLayerScore(d);
-    // Weight: 60% equity, 40% active layer — ensures cross-dimensional targeting
+    // Weight: 60% lens-weighted equity, 40% active layer
     const priority = (equityScore * 0.6) + (layerScore * 0.4);
     return { ...d, equityScore, layerScore, priority };
   }).sort((a, b) => b.priority - a.priority);
@@ -2289,7 +2297,7 @@ function selectDistrict(d) {
 
 function renderScorecard(d) {
   const ls  = LAYER_SCORES[d.fips] || {};
-  const eq  = Math.round((d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5);
+  const eq  = computeEquityScore(d, currentLens);
 
   const dims = [
     { id:'sc-food',     label:'FOOD',         score: Math.round(d.vulnerability_score), color:'#d32f2f' },

@@ -1149,15 +1149,10 @@ html, body {
 
       <div id="chat-messages"></div>
 
-      <div class="chip-row">
-        <button class="chip" onclick="sendChip('Which neighborhoods will be hit hardest by SNAP work requirements?')">SNAP work requirements</button>
-        <button class="chip" onclick="sendChip('Where are the worst pantry gaps?')">Pantry gaps</button>
-        <button class="chip" onclick="sendChip('Generate a policy memo for the Bronx')">Policy memo</button>
-        <button class="chip" onclick="sendChip('Predict SNAP impact of federal cuts')">Predict impact</button>
-      </div>
+      <div class="chip-row" id="chip-row"></div>
 
       <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Ask about a neighborhood or policy..." 
+        <input type="text" id="chat-input" placeholder="Ask about food policy, SNAP, pantries..."
                onkeydown="if(event.key==='Enter') sendMessage()">
         <button id="send-btn" onclick="sendMessage()">→</button>
       </div>
@@ -1172,13 +1167,8 @@ html, body {
             <button class="fmt-btn"        id="fmt-Data"     onclick="setFormat('Data',this)">Data</button>
           </div>
         </div>
-        <div class="qa-title">AI QUICK ACTIONS</div>
-        <div class="qa-grid">
-          <button class="qa-btn" onclick="sendChip('Generate a policy memo for the top 3 critical districts')">📋 Policy Memo</button>
-          <button class="qa-btn" onclick="sendChip('Predict the impact of SNAP cuts on the Bronx')">📊 Predict Impact</button>
-          <button class="qa-btn" onclick="sendChip('Find the neighborhoods with the worst pantry resource gaps')">🗺️ Resource Gaps</button>
-          <button class="qa-btn" onclick="sendChip('Which populations are most at risk from eligibility changes?')">👥 At-Risk Groups</button>
-        </div>
+        <div class="qa-title" id="qa-title">AI QUICK ACTIONS</div>
+        <div class="qa-grid" id="qa-grid"></div>
         <button class="export-btn" onclick="exportPDF()">⬇ EXPORT DISTRICT BRIEF AS PDF</button>
       </div>
     </aside>
@@ -1337,6 +1327,176 @@ const INDICATOR_CONFIG = [
   { key:"noncitizen_pct",      label:"Non-citizen Pop", color:"#fbc02d" },
 ];
 
+// Per-layer indicator definitions
+// source: 'ind' = d.indicators, 'raw' = LAYER_SCORES[fips]._raw
+// barVal: function returning 0-100 for bar fill width
+const LAYER_INDICATORS = {
+  food: [
+    { label:'SNAP Enrollment',  source:'ind', key:'snap_household_pct',  color:'#d32f2f', fmt: v => v.toFixed(1)+'%',  barVal: v => Math.min(v, 100) },
+    { label:'Child Poverty',    source:'ind', key:'child_poverty_pct',   color:'#f57c00', fmt: v => v.toFixed(1)+'%',  barVal: v => Math.min(v, 100) },
+    { label:'Rent Burden',      source:'ind', key:'rent_burden_pct',     color:'#f57c00', fmt: v => v.toFixed(1)+'%',  barVal: v => Math.min(v, 100) },
+    { label:'Unemployment',     source:'ind', key:'unemployment_pct',    color:'#fbc02d', fmt: v => v.toFixed(1)+'%',  barVal: v => Math.min(v*4, 100) },
+    { label:'Non-Citizen Pop',  source:'ind', key:'noncitizen_pct',      color:'#fbc02d', fmt: v => v.toFixed(1)+'%',  barVal: v => Math.min(v*2, 100) },
+  ],
+  housing: [
+    { label:'HPD Violations/1k HH', source:'raw', key:'hpd_per_1k',            color:'#d32f2f', fmt: v => v+'/1k',   barVal: v => Math.min(v/9, 100) },
+    { label:'Pipeline Stall Rate',  source:'raw', key:'pipeline_stall_rate',    color:'#f57c00', fmt: v => v+'%',     barVal: v => Math.min(v, 100) },
+    { label:'Completions/1k Units', source:'raw', key:'completions_per1k',      color:'#388e3c', fmt: v => v+'/1k',   barVal: v => Math.min(v/1.6, 100), invert:true },
+    { label:'Pipeline Permitted',   source:'raw', key:'pipeline_permitted',      color:'#fbc02d', fmt: v => v.toLocaleString()+' units', barVal: v => Math.min(v/100, 100) },
+    { label:'Pipeline Withdrawn',   source:'raw', key:'pipeline_withdrawn',      color:'#d32f2f', fmt: v => v.toLocaleString()+' units', barVal: v => Math.min(v/50, 100) },
+  ],
+  health: [
+    { label:'Life Expectancy',  source:'raw', key:'life_exp',   color:'#388e3c', fmt: v => v+' yrs',  barVal: v => Math.min(100 - (v - 75.1)/(86-75.1)*100, 100), invert:true },
+    { label:'Asthma Hosp/10k',  source:'raw', key:'asthma',     color:'#d32f2f', fmt: v => v+'/10k',  barVal: v => Math.min(v/0.984, 100) },
+    { label:'Child Poverty',    source:'ind', key:'child_poverty_pct',  color:'#f57c00', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v, 100) },
+    { label:'SNAP Enrollment',  source:'ind', key:'snap_household_pct', color:'#f57c00', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v, 100) },
+    { label:'Unemployment',     source:'ind', key:'unemployment_pct',   color:'#fbc02d', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v*4, 100) },
+  ],
+  cost_of_living: [
+    { label:'Median Monthly Rent',  source:'raw', key:'rent',           color:'#d32f2f', fmt: v => '$'+v+'/mo',    barVal: v => Math.min((v-1098)/(4286-1098)*100, 100) },
+    { label:'Rent Burdened HHs',    source:'ind', key:'rent_burden_pct',color:'#f57c00', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v, 100) },
+    { label:'Median Income',        source:'raw', key:'income_k',       color:'#388e3c', fmt: v => '$'+v+'k',      barVal: v => Math.min(100-(v-22.4)/(148.6-22.4)*100, 100), invert:true },
+    { label:'Unemployment',         source:'ind', key:'unemployment_pct',color:'#fbc02d',fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v*4, 100) },
+    { label:'Non-Citizen Pop',      source:'ind', key:'noncitizen_pct', color:'#fbc02d', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v*2, 100) },
+  ],
+  economic: [
+    { label:'Median Income',    source:'raw', key:'income_k',          color:'#388e3c', fmt: v => '$'+v+'k',      barVal: v => Math.min(100-(v-22.4)/(148.6-22.4)*100, 100), invert:true },
+    { label:'Unemployment',     source:'ind', key:'unemployment_pct',  color:'#d32f2f', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v*4, 100) },
+    { label:'Child Poverty',    source:'ind', key:'child_poverty_pct', color:'#f57c00', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v, 100) },
+    { label:'SNAP Enrollment',  source:'ind', key:'snap_household_pct',color:'#f57c00', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v, 100) },
+    { label:'Non-Citizen Pop',  source:'ind', key:'noncitizen_pct',    color:'#fbc02d', fmt: v => v.toFixed(1)+'%', barVal: v => Math.min(v*2, 100) },
+  ],
+  equity: [
+    { label:'Food Vulnerability', source:'score', key:'food',          color:'#d32f2f', fmt: v => v+'/100', barVal: v => v },
+    { label:'Housing Stability',  source:'score', key:'housing',       color:'#f57c00', fmt: v => v+'/100', barVal: v => v },
+    { label:'Health Burden',      source:'score', key:'health',        color:'#ff9800', fmt: v => v+'/100', barVal: v => v },
+    { label:'Cost of Living',     source:'score', key:'cost_of_living',color:'#fbc02d', fmt: v => v+'/100', barVal: v => v },
+    { label:'Economic Stress',    source:'score', key:'economic',      color:'#8bc34a', fmt: v => v+'/100', barVal: v => v },
+  ],
+};
+
+// AI action configs per layer × agency
+const AI_CONFIGS = {
+  food: {
+    placeholder: 'Ask about food policy, SNAP, pantries...',
+    chips: [
+      ['SNAP work requirements',  'Which neighborhoods will be hit hardest by SNAP work requirements?'],
+      ['Pantry gaps',             'Where are the worst food pantry gaps citywide?'],
+      ['Bronx food crisis',       'Generate a policy memo on the Bronx food vulnerability crisis'],
+      ['Federal cuts impact',     'Predict the impact of $186B SNAP cuts on NYC'],
+    ],
+    actions: [
+      ['📋', 'Policy Memo',   'Generate a policy memo for the top 3 critical food vulnerability districts'],
+      ['📊', 'Predict Impact','Predict the impact of SNAP cuts on the South Bronx'],
+      ['🗺️', 'Pantry Gaps',  'Find neighborhoods with the worst food pantry resource gaps'],
+      ['👥', 'At-Risk Groups','Which populations are most at risk from SNAP eligibility changes?'],
+    ],
+  },
+  housing: {
+    placeholder: 'Ask about HPD violations, pipeline, NYCHA...',
+    chips: [
+      ['Pipeline stall rates',  'Which districts have the worst housing pipeline stall rates?'],
+      ['HPD violations',        'Show me the districts with the most dangerous HPD violations'],
+      ['Eviction pressure',     'Which neighborhoods have the highest eviction filing rates?'],
+      ['NYCHA gaps',            'Which community districts have the highest NYCHA concentration and unmet need?'],
+    ],
+    actions: [
+      ['🏗️', 'Pipeline Gaps', 'Find the top 5 districts where housing development pipeline is most blocked'],
+      ['⚠️', 'HPD Hotspots',  'Identify top 5 districts by HPD Class C violation rate and recommend response'],
+      ['🏠', 'Supply Memo',   'Generate a housing supply memo for the top 5 most stressed districts'],
+      ['📊', 'Fund Allocation','Recommend HPD capital fund allocation across the 10 most housing-stressed districts'],
+    ],
+  },
+  health: {
+    placeholder: 'Ask about life expectancy, asthma, health disparities...',
+    chips: [
+      ['Life expectancy gap',  'Show me the life expectancy gap between the healthiest and least healthy districts'],
+      ['Asthma hotspots',      'Which neighborhoods have the worst asthma hospitalization rates?'],
+      ['Bronx health crisis',  'Analyze the health burden crisis in South Bronx community districts'],
+      ['DOHMH allocation',     'Recommend DOHMH program allocation for the top health-burdened districts'],
+    ],
+    actions: [
+      ['❤️', 'Health Memo',   'Generate a health burden memo for the top 5 most at-risk districts'],
+      ['🫁', 'Asthma Report', 'Identify asthma hotspots and recommend DOHMH interventions'],
+      ['📊', 'Life Exp Gap',  'Analyze the 10-year life expectancy gap between Bronx and Manhattan'],
+      ['💊', 'DOHMH Funding', 'Recommend DOHMH program fund allocation by health burden score'],
+    ],
+  },
+  cost_of_living: {
+    placeholder: 'Ask about rent burden, affordability, cost of living...',
+    chips: [
+      ['Rent burden hotspots',  'Which districts have the highest rent burden rates?'],
+      ['Affordability gap',     'Show the rent affordability crisis across the 5 boroughs'],
+      ['CoL + food link',       'How does high cost of living compound food insecurity?'],
+      ['SCRIE eligible',        'Which districts should be prioritized for rent freeze program outreach?'],
+    ],
+    actions: [
+      ['🏠', 'Rent Report',   'Generate a rent burden memo for the top 5 highest cost-of-living districts'],
+      ['💰', 'Affordability', 'Analyze the affordability gap in the 10 highest cost-of-living districts'],
+      ['📋', 'SCRIE Targets', 'Which districts should be prioritized for SCRIE/DRIE rent freeze outreach?'],
+      ['📊', 'CoL vs Income', 'Compare cost of living stress vs economic stress across all boroughs'],
+    ],
+  },
+  economic: {
+    placeholder: 'Ask about income, unemployment, economic development...',
+    chips: [
+      ['Income inequality',   'Show the income gap between the wealthiest and poorest districts'],
+      ['Unemployment map',    'Which districts have the highest unemployment rates?'],
+      ['Child poverty',       'Identify districts with the highest child poverty concentrations'],
+      ['SBS opportunity',     'Which districts would benefit most from SBS workforce programs?'],
+    ],
+    actions: [
+      ['💼', 'Workforce Memo',  'Generate a workforce development memo for the top 5 economic stress districts'],
+      ['📊', 'Income Analysis', 'Analyze median income disparities across all 5 boroughs'],
+      ['👶', 'Child Poverty',   'Identify the top 10 districts by child poverty rate and recommend interventions'],
+      ['💰', 'Fund Allocation', 'Recommend economic development fund allocation by economic stress score'],
+    ],
+  },
+  equity: {
+    placeholder: 'Ask about equity, multi-agency programs, fund allocation...',
+    chips: [
+      ['Compounding crises',    'Which districts face compounding crises across all 5 layers?'],
+      ['Multi-agency response', 'Which neighborhoods need a coordinated multi-agency response?'],
+      ['Budget allocation',     'Recommend a $10M equity fund allocation across the top 10 districts'],
+      ['Borough comparison',    'Compare equity scores across all 5 boroughs'],
+    ],
+    actions: [
+      ['⚖️', 'Equity Memo',   'Generate an equity analysis memo for the 5 most disadvantaged districts'],
+      ['🏙️', 'Multi-Agency',  'Identify which districts need coordinated MOFP + HPD + DOHMH response'],
+      ['💵', 'Fund Allocation','Recommend a $5M equity fund allocation weighted by composite equity score'],
+      ['📊', 'Borough Equity', 'Compare composite equity scores across all 5 boroughs'],
+    ],
+  },
+};
+
+function updateAIActions() {
+  const cfg = AI_CONFIGS[currentLayer] || AI_CONFIGS.food;
+
+  // Update chat placeholder
+  const input = document.getElementById('chat-input');
+  if (input) input.placeholder = cfg.placeholder;
+
+  // Update chip-row
+  const chipRow = document.getElementById('chip-row');
+  if (chipRow) {
+    chipRow.innerHTML = cfg.chips.map(([label, prompt]) =>
+      `<button type="button" class="chip" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${label}</button>`
+    ).join('');
+  }
+
+  // Update qa-grid
+  const qaGrid = document.getElementById('qa-grid');
+  if (qaGrid) {
+    qaGrid.innerHTML = cfg.actions.map(([icon, label, prompt]) =>
+      `<button type="button" class="qa-btn" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${icon} ${label}</button>`
+    ).join('');
+  }
+
+  // Update qa section title with agency context
+  const qaTitle = document.getElementById('qa-title');
+  if (qaTitle) qaTitle.textContent = `${currentAgency} QUICK ACTIONS · ${LAYER_LABELS[currentLayer] || currentLayer.toUpperCase()}`;
+}
+
 const PANTRIES = [
   { lat: 40.8448, lng: -73.8648, name: "Bronx - Hunts Point" },
   { lat: 40.8176, lng: -73.9197, name: "Bronx - Mott Haven" },
@@ -1422,11 +1582,12 @@ function setLayer(layer, btn) {
   }
   // re-render district list sorted by active layer
   renderDistrictList();
-  // update sidebar stats, alerts, trend chart
+  // update sidebar stats, alerts, trend chart, AI actions
   updateStatCards();
   generateAlerts();
+  updateAIActions();
   if (selectedDistrict) drawTrendChart(selectedDistrict);
-  // refresh detail score cards highlight
+  // refresh detail panel with new layer indicators
   if (selectedDistrict) selectDistrict(selectedDistrict);
 }
 
@@ -1576,6 +1737,7 @@ function setAgency(agency, btn) {
   if (btn) btn.classList.add('active');
   const label = document.getElementById('ai-agency-label');
   if (label) label.textContent = AGENCY_LABELS[agency] || agency + ' AI ASSISTANT';
+  updateAIActions();
 }
 let map;
 
@@ -1716,22 +1878,32 @@ function selectDistrict(d) {
   });
   barsContainer.appendChild(scoreRow);
 
-  // ── Food vulnerability indicators ────────────────────────────────────────────
-  const foodSection = document.createElement('div');
-  foodSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">FOOD VULNERABILITY INDICATORS</div>';
-  barsContainer.appendChild(foodSection);
+  // ── Layer-specific indicators ────────────────────────────────────────────────
+  const indSection = document.createElement('div');
+  indSection.innerHTML = `<div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">${LAYER_LABELS[currentLayer] || 'INDICATORS'}</div>`;
+  barsContainer.appendChild(indSection);
 
-  INDICATOR_CONFIG.forEach(cfg => {
-    const val = d.indicators[cfg.key] || 0;
-    const row = document.createElement('div');
+  const indicators = LAYER_INDICATORS[currentLayer] || LAYER_INDICATORS.food;
+  const scores_map = { food: d.vulnerability_score, housing: ls.housing||0, cost_of_living: ls.cost_of_living||0, health: ls.health||0, economic: ls.economic||0 };
+
+  indicators.forEach(cfg => {
+    let val;
+    if (cfg.source === 'ind')   val = d.indicators[cfg.key] || 0;
+    else if (cfg.source === 'raw')   val = raw[cfg.key] != null ? raw[cfg.key] : null;
+    else if (cfg.source === 'score') val = scores_map[cfg.key] || 0;
+    if (val === null) return;
+
+    const barW  = Math.round(Math.max(0, Math.min(100, cfg.barVal(val))));
+    const label = cfg.fmt(val);
+    const row   = document.createElement('div');
     row.className = 'indicator-row';
     row.innerHTML = `
       <div class="indicator-label">${cfg.label}</div>
       <div class="indicator-track">
         <div class="indicator-fill" style="width:0%;background:${cfg.color}"
-             data-target="${Math.min(val, 100)}"></div>
+             data-target="${barW}"></div>
       </div>
-      <div class="indicator-pct" style="color:${cfg.color}">${val.toFixed(1)}%</div>
+      <div class="indicator-pct" style="color:${cfg.color}">${label}</div>
     `;
     barsContainer.appendChild(row);
   });
@@ -2213,6 +2385,7 @@ function exportPDF() {
 renderDistrictList();
 updateStatCards();
 generateAlerts();
+updateAIActions();
 initMap();
 initChat();
 selectDistrict(DISTRICTS[0]); // Pre-select #1

@@ -1742,10 +1742,20 @@ function setAgency(agency, btn) {
 let map;
 
 // ── FORMAT SELECTOR ────────────────────────────────────────────────────────────
+const FORMAT_PROMPTS = {
+  Memo:     () => `Generate a formal policy memo${selectedDistrict ? ' for ' + selectedDistrict.cd_name + ', ' + selectedDistrict.borough : ' for the top 5 highest-risk districts'} covering the ${LAYER_LABELS[currentLayer] || currentLayer} layer. Include priority actions for ${currentAgency}.`,
+  Briefing: () => `Generate an executive briefing${selectedDistrict ? ' on ' + selectedDistrict.cd_name + ', ' + selectedDistrict.borough : ' on the top 5 highest-risk districts'} using the ${LAYER_LABELS[currentLayer] || currentLayer} lens. Keep it concise with key metrics and 3 recommended actions for ${currentAgency}.`,
+  Bullets:  () => `Summarize the ${LAYER_LABELS[currentLayer] || currentLayer} situation${selectedDistrict ? ' in ' + selectedDistrict.cd_name + ', ' + selectedDistrict.borough : ' across the top 5 critical districts'} as a bullet-point brief for ${currentAgency}. Include data highlights and action items.`,
+  Data:     () => `Provide a data summary of key ${LAYER_LABELS[currentLayer] || currentLayer} indicators${selectedDistrict ? ' for ' + selectedDistrict.cd_name + ', ' + selectedDistrict.borough : ' across all 59 community districts'}. Include comparative rankings, outliers, and source notes.`,
+};
+
 function setFormat(fmt, btn) {
   currentFormat = fmt;
   document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  // Auto-generate report in the selected format
+  const promptFn = FORMAT_PROMPTS[fmt];
+  if (promptFn) sendChip(promptFn());
 }
 
 // ── DERIVED CONTEXT DATA ───────────────────────────────────────────────────────
@@ -2320,61 +2330,72 @@ function exportPDF() {
     return;
   }
 
-  const ind = d.indicators;
+  const ls  = LAYER_SCORES[d.fips] || {};
+  const raw = ls._raw || {};
   const tierColors = { Critical: '#d32f2f', High: '#f57c00', Moderate: '#f9a825', Lower: '#388e3c' };
-  const tierColor  = tierColors[d.risk_tier] || '#555';
 
-  // Grab last AI message text (strip HTML tags for clean print)
+  // Active layer score + tier
+  const layerScore = getLayerScore(d.fips);
+  const layerTier  = layerScore >= 70 ? 'Critical' : layerScore >= 50 ? 'High' : layerScore >= 30 ? 'Moderate' : 'Lower';
+  const tierColor  = tierColors[layerTier];
+  const layerLabel = LAYER_LABELS[currentLayer] || currentLayer.toUpperCase();
+  const agencyLabel = AGENCY_LABELS[currentAgency] || currentAgency;
+
+  // Grab last AI message text
   const aiMsgs = document.querySelectorAll('.msg-ai .msg-bubble');
   const lastAI = aiMsgs.length
     ? aiMsgs[aiMsgs.length - 1].innerText
     : 'No AI analysis generated yet. Use the AI assistant to generate a policy memo, then export.';
 
-  const indicators = [
-    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%' },
-    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%' },
-    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%' },
-    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%' },
-    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%' },
-  ];
-
-  const indRows = indicators.map(i => `
+  // Build indicator rows from active layer
+  const scores_map = { food: d.vulnerability_score, housing: ls.housing||0, cost_of_living: ls.cost_of_living||0, health: ls.health||0, economic: ls.economic||0, equity: ls.equity||0 };
+  const layerInds  = LAYER_INDICATORS[currentLayer] || LAYER_INDICATORS.food;
+  const indRows = layerInds.map(cfg => {
+    let val;
+    if (cfg.source === 'ind')        val = d.indicators[cfg.key] != null ? d.indicators[cfg.key] : null;
+    else if (cfg.source === 'raw')   val = raw[cfg.key] != null ? raw[cfg.key] : null;
+    else if (cfg.source === 'score') val = scores_map[cfg.key] != null ? scores_map[cfg.key] : null;
+    if (val === null || val === undefined) return '';
+    const barW = Math.round(Math.max(0, Math.min(100, cfg.barVal(val))));
+    const fmtVal = cfg.fmt(val);
+    return `
     <div class="pr-indicator-row">
-      <span>${i.label} <span style="color:#999;font-size:10px">(${i.weight})</span></span>
+      <span>${cfg.label}</span>
       <div class="pr-bar-bg">
-        <div class="pr-bar-fill" style="width:${Math.min(i.val, 100)}%;background:${tierColor}"></div>
+        <div class="pr-bar-fill" style="width:${barW}%;background:${cfg.color}"></div>
       </div>
-      <span class="pr-indicator-val">${i.val}%</span>
-    </div>`).join('');
+      <span class="pr-indicator-val">${fmtVal}</span>
+    </div>`;
+  }).join('');
 
   document.getElementById('print-report').innerHTML = `
     <div class="pr-header">
-      <div class="pr-agency">The Grid NYC · Multi-Agency Neighborhood Intelligence Platform</div>
+      <div class="pr-agency">The Grid NYC · ${agencyLabel} · ${layerLabel} REPORT</div>
       <div class="pr-title">${d.cd_name}, ${d.borough}</div>
-      <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · The Grid NYC — Neighborhood Intelligence Platform</div>
+      <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · Community District ${d.fips} · Format: ${currentFormat}</div>
     </div>
 
-    <div class="pr-score-block tier-${d.risk_tier}">
+    <div class="pr-score-block tier-${layerTier}">
       <div>
-        <div class="pr-score-label">Vulnerability Score</div>
-        <div class="pr-score-num">${d.vulnerability_score}</div>
+        <div class="pr-score-label">${layerLabel} Score</div>
+        <div class="pr-score-num">${layerScore}</div>
       </div>
       <div>
         <div class="pr-score-label">Risk Tier</div>
-        <div class="pr-tier-badge" style="background:${tierColor};color:#fff">${d.risk_tier.toUpperCase()}</div>
-        <div class="pr-score-label" style="margin-top:8px">Community District ${d.fips}</div>
+        <div class="pr-tier-badge" style="background:${tierColor};color:#fff">${layerTier.toUpperCase()}</div>
+        <div class="pr-score-label" style="margin-top:8px">Agency: ${currentAgency}</div>
       </div>
     </div>
 
-    <div class="pr-section-title">Vulnerability Indicators</div>
-    ${indRows}
+    <div class="pr-section-title">${layerLabel} Indicators</div>
+    ${indRows || '<div style="color:#999;font-size:12px;padding:8px 0">No indicators available for this layer.</div>'}
 
-    <div class="pr-section-title">AI Policy Analysis</div>
+    <div class="pr-section-title">AI Policy Analysis — ${currentFormat} Format</div>
     <div class="pr-memo">${lastAI}</div>
 
     <div class="pr-footer">
-      <span>The Grid NYC · Neighborhood Intelligence Platform · Confidential Pre-decisional</span>
-      <span>Confidential — Pre-decisional · ${new Date().toLocaleDateString()}</span>
+      <span>The Grid NYC · ${agencyLabel} · Confidential Pre-decisional</span>
+      <span>${new Date().toLocaleDateString()}</span>
     </div>
   `;
 

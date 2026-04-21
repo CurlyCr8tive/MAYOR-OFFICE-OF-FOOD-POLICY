@@ -49,7 +49,7 @@ html, body {
 /* ── LAYOUT ───────────────────────────────────────────────── */
 #app {
   display: grid;
-  grid-template-rows: 48px 38px 1fr;
+  grid-template-rows: 48px 1fr;
   height: 100vh;
 }
 
@@ -838,331 +838,6 @@ html, body {
 }
 .export-btn:hover { background: #ff4d1c; color: #fff; }
 
-/* ── TOPBAR SUBTITLE ──────────────────────────────────────────────────────── */
-.topbar-subtitle {
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: var(--text-dim);
-  margin-top: 1px;
-  text-transform: uppercase;
-}
-
-/* ── DISTRICT SCORECARD ──────────────────────────────────────────────────── */
-.scorecard-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 36px;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 7px;
-}
-.scorecard-label {
-  font-size: 10px;
-  color: var(--text-secondary);
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-.scorecard-track {
-  height: 8px;
-  background: var(--bg-raised);
-  position: relative;
-  overflow: hidden;
-}
-.scorecard-fill {
-  height: 100%;
-  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
-}
-.scorecard-val {
-  font-size: 12px;
-  font-weight: 500;
-  text-align: right;
-}
-.scorecard-divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 6px 0;
-}
-
-/* ── GAP VIEW TOGGLE ─────────────────────────────────────────────────────── */
-.map-gap-toggle {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  background: rgba(10,10,15,0.9);
-  border: 1px solid var(--border-bright);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 2px;
-  padding: 6px 14px;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: all 0.15s;
-}
-.map-gap-toggle:hover { border-color: #ffd54f; color: #ffd54f; }
-.map-gap-toggle.active { background: rgba(255,213,79,0.15); border-color: #ffd54f; color: #ffd54f; }
-
-/* ── AI PANEL TABS ───────────────────────────────────────────────────────── */
-.ai-tabs {
-  display: flex;
-  width: 100%;
-  border-bottom: 1px solid var(--border);
-}
-.ai-tab {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  padding: 12px 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: -1px;
-}
-.ai-tab:hover { color: var(--text-secondary); }
-.ai-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.ai-tab#tab-scenario.active { color: #ffd54f; border-bottom-color: #ffd54f; }
-
-/* ── SCENARIO BUILDER ────────────────────────────────────────────────────── */
-#scenario-content {
-  display: none;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-.scenario-intro {
-  padding: 10px 14px;
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  border-bottom: 1px solid var(--border);
-}
-.scenario-input-area {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.scenario-input-label {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-}
-.scenario-input-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-.scenario-dollar {
-  font-size: 18px;
-  color: var(--text-secondary);
-  font-family: var(--font-display);
-}
-.scenario-budget-field {
-  flex: 1;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-bright);
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 22px;
-  padding: 6px 10px;
-  letter-spacing: 1px;
-  outline: none;
-}
-.scenario-budget-field:focus { border-color: #ffd54f; }
-.scenario-slider {
-  width: 100%;
-  accent-color: #ffd54f;
-  margin-bottom: 2px;
-}
-.scenario-slider-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-}
-.scenario-layer-note {
-  font-size: 10px;
-  color: var(--text-dim);
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-}
-.scenario-layer-note span { color: #ffd54f; }
-.scenario-run-btn {
-  width: 100%;
-  padding: 9px;
-  background: transparent;
-  border: 1px solid #ffd54f;
-  color: #ffd54f;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.scenario-run-btn:hover { background: #ffd54f; color: var(--bg-deepest); }
-.scenario-results {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 14px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-bright) transparent;
-}
-.scenario-placeholder {
-  font-size: 12px;
-  color: var(--text-dim);
-  line-height: 1.6;
-  padding-top: 12px;
-}
-.scenario-summary {
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-.scenario-total {
-  font-size: 11px;
-  color: var(--text-secondary);
-  letter-spacing: 1px;
-  margin-bottom: 3px;
-}
-.scenario-total span { color: #ffd54f; font-family: var(--font-display); font-size: 15px; }
-.scenario-impact {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-.scenario-impact span { color: #4caf50; font-weight: 500; }
-.scenario-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-.scenario-rank {
-  font-size: 10px;
-  color: var(--text-dim);
-  width: 20px;
-  flex-shrink: 0;
-  padding-top: 2px;
-}
-.scenario-info { flex: 1; min-width: 0; }
-.scenario-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
-.scenario-borough { font-size: 10px; color: var(--text-secondary); margin: 1px 0; }
-.scenario-type { font-size: 10px; color: var(--accent); }
-.scenario-amount {
-  font-family: var(--font-display);
-  font-size: 14px;
-  color: #ffd54f;
-  flex-shrink: 0;
-  padding-top: 2px;
-}
-.scenario-remainder {
-  font-size: 11px;
-  color: var(--text-secondary);
-  padding: 8px 0;
-  font-style: italic;
-}
-.scenario-send-btn {
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px;
-  background: rgba(255, 213, 79, 0.1);
-  border: 1px solid #ffd54f44;
-  color: #ffd54f;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.scenario-send-btn:hover { background: rgba(255,213,79,0.2); }
-
-/* ── LAYER NAVIGATION ─────────────────────────────────────────────────────── */
-#layer-nav {
-  display: flex;
-  align-items: center;
-  background: var(--bg-deepest);
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-  gap: 0;
-  z-index: 999;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-#layer-nav::-webkit-scrollbar { display: none; }
-
-.layer-tab {
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 2px;
-  padding: 0 14px;
-  height: 38px;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  margin-bottom: -1px;
-  text-transform: uppercase;
-}
-.layer-tab:hover { color: var(--text-primary); }
-.layer-tab[data-layer="food"].active         { color: var(--accent);   border-bottom-color: var(--accent); }
-.layer-tab[data-layer="housing"].active      { color: #ab47bc;  border-bottom-color: #ab47bc; }
-.layer-tab[data-layer="cost_of_living"].active{ color: #ff9800;  border-bottom-color: #ff9800; }
-.layer-tab[data-layer="health"].active       { color: #42a5f5;  border-bottom-color: #42a5f5; }
-.layer-tab[data-layer="economic"].active     { color: #26a69a;  border-bottom-color: #26a69a; }
-.layer-tab[data-layer="equity"].active       { color: #ffd54f;  border-bottom-color: #ffd54f; }
-
-.layer-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-
-/* ── AGENCY LENS ──────────────────────────────────────────────────────────── */
-.agency-lens-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  padding-left: 16px;
-  flex-shrink: 0;
-}
-.agency-lens-label {
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: var(--text-dim);
-  margin-right: 4px;
-  white-space: nowrap;
-}
-.agency-lens-btn {
-  background: transparent;
-  border: 1px solid var(--border-bright);
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  padding: 4px 10px;
-  height: 24px;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  text-transform: uppercase;
-}
-.agency-lens-btn:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
-.agency-lens-btn[data-lens="MOFP"].active  { background: rgba(255,77,28,0.12);  border-color: var(--accent); color: var(--accent); }
-.agency-lens-btn[data-lens="HPD"].active   { background: rgba(171,71,188,0.12); border-color: #ab47bc;       color: #ab47bc; }
-.agency-lens-btn[data-lens="DOHMH"].active { background: rgba(66,165,245,0.12); border-color: #42a5f5;       color: #42a5f5; }
-
 /* ── PRINT / PDF STYLES ─────────────────────────────────────────────────────── */
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1274,37 +949,17 @@ html, body {
   <header id="topbar">
     <div class="topbar-left">
       <div class="nyc-logo">NYC</div>
-      <div>
-        <div class="topbar-title">THE <span>GRID</span> NYC</div>
-        <div class="topbar-subtitle">EVERY DISTRICT · EVERY INDICATOR · ONE VIEW</div>
-      </div>
+      <div class="topbar-title">NYC <span>FOOD VULNERABILITY</span> DASHBOARD</div>
     </div>
     <div class="topbar-right">
       <div class="live-indicator">
         <div class="live-dot"></div>
         LIVE DATA
       </div>
-      <div id="active-agency-label">MAYOR'S OFFICE OF FOOD POLICY</div>
+      <div>MAYOR'S OFFICE OF FOOD POLICY</div>
       <div id="clock">--:-- --</div>
     </div>
   </header>
-
-  <!-- LAYER NAVIGATION -->
-  <nav id="layer-nav">
-    <button class="layer-tab active" data-layer="food"           onclick="switchLayer('food')">FOOD</button>
-    <button class="layer-tab"        data-layer="housing"        onclick="switchLayer('housing')">HOUSING</button>
-    <button class="layer-tab"        data-layer="cost_of_living" onclick="switchLayer('cost_of_living')">COST OF LIVING</button>
-    <button class="layer-tab"        data-layer="health"         onclick="switchLayer('health')">HEALTH</button>
-    <button class="layer-tab"        data-layer="economic"       onclick="switchLayer('economic')">ECONOMIC</button>
-    <div class="layer-divider"></div>
-    <button class="layer-tab"        data-layer="equity"         onclick="switchLayer('equity')">◆ EQUITY SCORE</button>
-    <div class="agency-lens-group">
-      <span class="agency-lens-label">AGENCY LENS:</span>
-      <button class="agency-lens-btn active" data-lens="MOFP"  onclick="switchAgencyLens('MOFP')">MOFP</button>
-      <button class="agency-lens-btn"        data-lens="HPD"   onclick="switchAgencyLens('HPD')">HPD</button>
-      <button class="agency-lens-btn"        data-lens="DOHMH" onclick="switchAgencyLens('DOHMH')">DOHMH</button>
-    </div>
-  </nav>
 
   <div id="main">
 
@@ -1317,7 +972,24 @@ html, body {
 
       <div id="district-list"></div>
 
-      <div class="stat-cards" id="stat-cards"></div>
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-val">1.8M</div>
+          <div class="stat-label">SNAP RECIPIENTS</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-critical">8</div>
+          <div class="stat-label">CRITICAL DISTRICTS</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">700+</div>
+          <div class="stat-label">FOOD PANTRIES</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">$186B</div>
+          <div class="stat-label">CUTS INCOMING</div>
+        </div>
+      </div>
 
       <div class="borough-filters">
         <button class="borough-btn active" onclick="filterBorough('All')">All</button>
@@ -1332,11 +1004,10 @@ html, body {
     <!-- CENTER PANEL -->
     <main id="center">
       <div id="map-container">
-        <div class="map-header" id="map-header-text">NYC · 59 COMMUNITY DISTRICTS · FOOD VULNERABILITY</div>
+        <div class="map-header">NYC · 59 COMMUNITY DISTRICTS · VULNERABILITY MAP</div>
         <div class="map-timestamp" id="map-timestamp">Updated: Loading...</div>
-        <button class="map-gap-toggle" id="gap-toggle" onclick="toggleGapView()">◈ GAP VIEW</button>
         <div id="map"></div>
-        <div class="map-legend" id="map-legend">
+        <div class="map-legend">
           <div class="legend-title">RISK TIER</div>
           <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f"></div>Critical</div>
           <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div>High</div>
@@ -1347,19 +1018,12 @@ html, body {
       </div>
 
       <div id="bottom-panels">
-        <!-- District Scorecard -->
+        <!-- District Detail -->
         <div class="bottom-panel">
-          <div class="panel-title">DISTRICT SCORECARD — <span id="detail-name">Select a district</span></div>
-          <div id="scorecard-dimensions" style="display:none">
-            <div class="scorecard-row" id="sc-food"></div>
-            <div class="scorecard-row" id="sc-housing"></div>
-            <div class="scorecard-row" id="sc-cost"></div>
-            <div class="scorecard-row" id="sc-health"></div>
-            <div class="scorecard-row" id="sc-economic"></div>
-          </div>
+          <div class="panel-title">DISTRICT DETAIL — <span id="detail-name">Select a district</span></div>
           <div id="detail-bars">
             <div style="color:var(--text-dim);font-size:11px;padding-top:16px;">
-              Click a district on the map or list to view its scorecard
+              Click a district on the map or list to view indicators
             </div>
           </div>
           <div class="trend-area" id="trend-area" style="display:none">
@@ -1379,76 +1043,49 @@ html, body {
     <!-- RIGHT AI PANEL -->
     <aside id="ai-panel">
       <div class="ai-header">
-        <div class="ai-tabs">
-          <button class="ai-tab active" id="tab-ai"       onclick="switchAITab('ai')">⚡ AI ANALYST</button>
-          <button class="ai-tab"        id="tab-scenario" onclick="switchAITab('scenario')">◉ SCENARIO BUILDER</button>
+        <div class="ai-title">
+          <div class="ai-icon">⚡</div>
+          <div>
+            <div class="ai-name">FOOD POLICY AI ASSISTANT</div>
+            <div class="ai-subtitle">Powered by Claude · NYC Mayor's Office</div>
+          </div>
         </div>
       </div>
 
-      <!-- AI CHAT CONTENT -->
-      <div id="ai-content" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-        <div id="chat-messages"></div>
+      <div id="chat-messages"></div>
 
-        <div class="chip-row">
-          <button class="chip" onclick="sendChip('Which neighborhoods will be hit hardest by SNAP work requirements?')">SNAP work requirements</button>
-          <button class="chip" onclick="sendChip('Where are the worst pantry gaps?')">Pantry gaps</button>
-          <button class="chip" onclick="sendChip('Generate a policy memo for the Bronx')">Policy memo</button>
-          <button class="chip" onclick="sendChip('Predict SNAP impact of federal cuts')">Predict impact</button>
-        </div>
-
-        <div class="chat-input-area">
-          <input type="text" id="chat-input" placeholder="Ask about a neighborhood or policy..."
-                 onkeydown="if(event.key==='Enter') sendMessage()">
-          <button id="send-btn" onclick="sendMessage()">→</button>
-        </div>
-
-        <div class="quick-actions">
-          <div class="format-selector">
-            <div class="qa-title">RESPONSE FORMAT</div>
-            <div class="format-btns">
-              <button class="fmt-btn active" id="fmt-Memo"     onclick="setFormat('Memo',this)">Policy Memo</button>
-              <button class="fmt-btn"        id="fmt-Briefing" onclick="setFormat('Briefing',this)">Briefing</button>
-              <button class="fmt-btn"        id="fmt-Bullets"  onclick="setFormat('Bullets',this)">Bullets</button>
-              <button class="fmt-btn"        id="fmt-Data"     onclick="setFormat('Data',this)">Data</button>
-            </div>
-          </div>
-          <div class="qa-title">AI QUICK ACTIONS</div>
-          <div class="qa-grid">
-            <button class="qa-btn" onclick="sendChip('Generate a policy memo for the top 3 critical districts')">📋 Policy Memo</button>
-            <button class="qa-btn" onclick="sendChip('Predict the impact of SNAP cuts on the Bronx')">📊 Predict Impact</button>
-            <button class="qa-btn" onclick="sendChip('Find the neighborhoods with the worst pantry resource gaps')">🗺️ Resource Gaps</button>
-            <button class="qa-btn" onclick="sendChip('Which populations are most at risk from eligibility changes?')">👥 At-Risk Groups</button>
-          </div>
-          <button class="export-btn" onclick="exportPDF()">⬇ EXPORT FULL DISTRICT BRIEF (PDF)</button>
-        </div>
+      <div class="chip-row">
+        <button class="chip" onclick="sendChip('Which neighborhoods will be hit hardest by SNAP work requirements?')">SNAP work requirements</button>
+        <button class="chip" onclick="sendChip('Where are the worst pantry gaps?')">Pantry gaps</button>
+        <button class="chip" onclick="sendChip('Generate a policy memo for the Bronx')">Policy memo</button>
+        <button class="chip" onclick="sendChip('Predict SNAP impact of federal cuts')">Predict impact</button>
       </div>
 
-      <!-- SCENARIO BUILDER CONTENT -->
-      <div id="scenario-content">
-        <div class="scenario-intro">
-          Enter a budget. Get AI-optimized allocation recommendations across all 59 community districts based on the active equity layer.
-        </div>
-        <div class="scenario-input-area">
-          <div class="scenario-input-label">TOTAL BUDGET TO ALLOCATE</div>
-          <div class="scenario-input-row">
-            <span class="scenario-dollar">$</span>
-            <input type="text" id="scenario-budget-input" class="scenario-budget-field"
-                   value="1,000,000" oninput="syncBudgetFromInput(this.value)">
-          </div>
-          <input type="range" id="scenario-slider" class="scenario-slider"
-                 min="100000" max="25000000" step="100000" value="1000000"
-                 oninput="syncBudgetFromSlider(this.value)">
-          <div class="scenario-slider-labels">
-            <span>$100K</span><span>$12.5M</span><span>$25M</span>
-          </div>
-          <div class="scenario-layer-note">Optimizing for: <span id="scenario-layer-label">EQUITY SCORE</span></div>
-          <button class="scenario-run-btn" onclick="runScenario()">◉ CALCULATE OPTIMAL ALLOCATION</button>
-        </div>
-        <div id="scenario-results" class="scenario-results">
-          <div class="scenario-placeholder">Enter a budget and click Calculate to see where your investment will have the most impact across all 59 districts.</div>
-        </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Ask about a neighborhood or policy..." 
+               onkeydown="if(event.key==='Enter') sendMessage()">
+        <button id="send-btn" onclick="sendMessage()">→</button>
       </div>
 
+      <div class="quick-actions">
+        <div class="format-selector">
+          <div class="qa-title">RESPONSE FORMAT</div>
+          <div class="format-btns">
+            <button class="fmt-btn active" id="fmt-Memo"     onclick="setFormat('Memo',this)">Policy Memo</button>
+            <button class="fmt-btn"        id="fmt-Briefing" onclick="setFormat('Briefing',this)">Briefing</button>
+            <button class="fmt-btn"        id="fmt-Bullets"  onclick="setFormat('Bullets',this)">Bullets</button>
+            <button class="fmt-btn"        id="fmt-Data"     onclick="setFormat('Data',this)">Data</button>
+          </div>
+        </div>
+        <div class="qa-title">AI QUICK ACTIONS</div>
+        <div class="qa-grid">
+          <button class="qa-btn" onclick="sendChip('Generate a policy memo for the top 3 critical districts')">📋 Policy Memo</button>
+          <button class="qa-btn" onclick="sendChip('Predict the impact of SNAP cuts on the Bronx')">📊 Predict Impact</button>
+          <button class="qa-btn" onclick="sendChip('Find the neighborhoods with the worst pantry resource gaps')">🗺️ Resource Gaps</button>
+          <button class="qa-btn" onclick="sendChip('Which populations are most at risk from eligibility changes?')">👥 At-Risk Groups</button>
+        </div>
+        <button class="export-btn" onclick="exportPDF()">⬇ EXPORT DISTRICT BRIEF AS PDF</button>
+      </div>
     </aside>
 
   </div>
@@ -1458,6 +1095,71 @@ html, body {
 <div id="print-report"></div>
 
 <script>
+// ── LAYER SCORES (generated by build_layer_scores.py) ────────────────────────
+// Housing stability blends HPD violations (60%) + development pipeline stress (40%)
+// _raw fields expose underlying indicators for Claude tool-use
+const LAYER_SCORES = {
+  "101":{ housing:15, cost_of_living:86, health:24, economic:29, _raw:{ hpd_per_1k:42.8, life_exp:82.3, asthma:24.1, rent:3842, income_k:112.4, completions_5yr:2879, completions_per1k:68.6, pipeline_filed:3608, pipeline_permitted:5347, pipeline_withdrawn:653, pipeline_inactive:951, pipeline_stall_rate:23.1 } },
+  "102":{ housing:44, cost_of_living:80, health:25, economic:25, _raw:{ hpd_per_1k:259.1, life_exp:82.1, asthma:22.8, rent:3648, income_k:116.8, completions_5yr:876, completions_per1k:15.0, pipeline_filed:612, pipeline_permitted:523, pipeline_withdrawn:241, pipeline_inactive:300, pipeline_stall_rate:50.8 } },
+  "103":{ housing:59, cost_of_living:44, health:50, economic:66, _raw:{ hpd_per_1k:483.9, life_exp:79.8, asthma:48.6, rent:2486, income_k:64.8, completions_5yr:1765, completions_per1k:21.4, pipeline_filed:1897, pipeline_permitted:1368, pipeline_withdrawn:483, pipeline_inactive:869, pipeline_stall_rate:49.7 } },
+  "104":{ housing:43, cost_of_living:64, health:35, economic:41, _raw:{ hpd_per_1k:251.8, life_exp:81.6, asthma:38.2, rent:3124, income_k:96.4, completions_5yr:4769, completions_per1k:57.5, pipeline_filed:2420, pipeline_permitted:1121, pipeline_withdrawn:329, pipeline_inactive:2096, pipeline_stall_rate:68.4 } },
+  "105":{ housing:32, cost_of_living:75, health:24, economic:51, _raw:{ hpd_per_1k:51.8, life_exp:82.8, asthma:29.4, rent:3486, income_k:84.2, completions_5yr:1528, completions_per1k:38.6, pipeline_filed:4117, pipeline_permitted:1841, pipeline_withdrawn:3208, pipeline_inactive:1617, pipeline_stall_rate:72.4 } },
+  "106":{ housing:31, cost_of_living:81, health:12, economic:24, _raw:{ hpd_per_1k:146.0, life_exp:84.2, asthma:19.8, rent:3684, income_k:118.6, completions_5yr:1905, completions_per1k:18.7, pipeline_filed:2735, pipeline_permitted:2613, pipeline_withdrawn:1086, pipeline_inactive:267, pipeline_stall_rate:34.1 } },
+  "107":{ housing:52, cost_of_living:67, health:14, economic:32, _raw:{ hpd_per_1k:239.8, life_exp:84.1, asthma:24.3, rent:3248, income_k:108.4, completions_5yr:898, completions_per1k:7.0, pipeline_filed:227, pipeline_permitted:210, pipeline_withdrawn:972, pipeline_inactive:154, pipeline_stall_rate:84.3 } },
+  "108":{ housing:27, cost_of_living:100, health:0, economic:0, _raw:{ hpd_per_1k:155.7, life_exp:86.0, asthma:16.2, rent:4286, income_k:148.6, completions_5yr:1383, completions_per1k:10.0, pipeline_filed:297, pipeline_permitted:911, pipeline_withdrawn:0, pipeline_inactive:105, pipeline_stall_rate:10.3 } },
+  "109":{ housing:60, cost_of_living:28, health:59, economic:74, _raw:{ hpd_per_1k:412.6, life_exp:79.3, asthma:62.4, rent:1986, income_k:54.8, completions_5yr:1102, completions_per1k:24.5, pipeline_filed:46, pipeline_permitted:274, pipeline_withdrawn:448, pipeline_inactive:344, pipeline_stall_rate:74.3 } },
+  "110":{ housing:74, cost_of_living:23, health:73, economic:82, _raw:{ hpd_per_1k:680.0, life_exp:77.8, asthma:74.8, rent:1842, income_k:44.6, completions_5yr:2151, completions_per1k:34.9, pipeline_filed:426, pipeline_permitted:466, pipeline_withdrawn:139, pipeline_inactive:632, pipeline_stall_rate:62.3 } },
+  "111":{ housing:63, cost_of_living:20, health:72, economic:87, _raw:{ hpd_per_1k:542.2, life_exp:78.4, asthma:78.3, rent:1748, income_k:38.4, completions_5yr:2830, completions_per1k:51.7, pipeline_filed:785, pipeline_permitted:1809, pipeline_withdrawn:1789, pipeline_inactive:1572, pipeline_stall_rate:65.0 } },
+  "112":{ housing:75, cost_of_living:20, health:53, economic:80, _raw:{ hpd_per_1k:580.0, life_exp:80.2, asthma:58.9, rent:1724, income_k:48.2, completions_5yr:1082, completions_per1k:14.5, pipeline_filed:685, pipeline_permitted:250, pipeline_withdrawn:219, pipeline_inactive:1005, pipeline_stall_rate:83.0 } },
+  "201":{ housing:25, cost_of_living:2, health:96, economic:100, _raw:{ hpd_per_1k:255.4, life_exp:75.8, asthma:98.4, rent:1148, income_k:22.4, completions_5yr:5862, completions_per1k:160.0, pipeline_filed:1143, pipeline_permitted:1210, pipeline_withdrawn:997, pipeline_inactive:230, pipeline_stall_rate:50.3 } },
+  "202":{ housing:40, cost_of_living:0, health:93, economic:99, _raw:{ hpd_per_1k:364.6, life_exp:76.1, asthma:96.1, rent:1098, income_k:23.1, completions_5yr:1580, completions_per1k:80.4, pipeline_filed:311, pipeline_permitted:936, pipeline_withdrawn:97, pipeline_inactive:430, pipeline_stall_rate:36.0 } },
+  "203":{ housing:41, cost_of_living:1, health:92, economic:99, _raw:{ hpd_per_1k:384.1, life_exp:76.3, asthma:94.8, rent:1124, income_k:24.8, completions_5yr:2605, completions_per1k:77.0, pipeline_filed:1383, pipeline_permitted:1620, pipeline_withdrawn:818, pipeline_inactive:100, pipeline_stall_rate:36.2 } },
+  "204":{ housing:49, cost_of_living:2, health:88, economic:97, _raw:{ hpd_per_1k:590.7, life_exp:76.6, asthma:91.2, rent:1162, income_k:26.2, completions_5yr:5133, completions_per1k:94.3, pipeline_filed:1953, pipeline_permitted:4166, pipeline_withdrawn:499, pipeline_inactive:277, pipeline_stall_rate:15.7 } },
+  "205":{ housing:70, cost_of_living:3, health:88, economic:98, _raw:{ hpd_per_1k:755.4, life_exp:76.4, asthma:89.6, rent:1189, income_k:24.6, completions_5yr:3791, completions_per1k:80.8, pipeline_filed:1157, pipeline_permitted:2140, pipeline_withdrawn:1526, pipeline_inactive:442, pipeline_stall_rate:47.9 } },
+  "206":{ housing:51, cost_of_living:1, health:93, economic:99, _raw:{ hpd_per_1k:519.8, life_exp:75.9, asthma:93.7, rent:1134, income_k:24.1, completions_5yr:3439, completions_per1k:106.0, pipeline_filed:1989, pipeline_permitted:1720, pipeline_withdrawn:1162, pipeline_inactive:560, pipeline_stall_rate:50.0 } },
+  "207":{ housing:82, cost_of_living:6, health:81, economic:95, _raw:{ hpd_per_1k:881.4, life_exp:77.2, asthma:82.4, rent:1298, income_k:28.4, completions_5yr:3612, completions_per1k:68.4, pipeline_filed:2006, pipeline_permitted:1101, pipeline_withdrawn:1115, pipeline_inactive:188, pipeline_stall_rate:54.2 } },
+  "208":{ housing:32, cost_of_living:17, health:46, economic:76, _raw:{ hpd_per_1k:155.7, life_exp:80.1, asthma:44.1, rent:1642, income_k:52.8, completions_5yr:1202, completions_per1k:26.7, pipeline_filed:347, pipeline_permitted:1023, pipeline_withdrawn:420, pipeline_inactive:191, pipeline_stall_rate:37.4 } },
+  "209":{ housing:39, cost_of_living:5, health:76, economic:92, _raw:{ hpd_per_1k:219.2, life_exp:77.8, asthma:79.3, rent:1248, income_k:32.6, completions_5yr:1962, completions_per1k:28.9, pipeline_filed:454, pipeline_permitted:1438, pipeline_withdrawn:1184, pipeline_inactive:268, pipeline_stall_rate:50.2 } },
+  "210":{ housing:34, cost_of_living:13, health:56, economic:82, _raw:{ hpd_per_1k:74.1, life_exp:79.6, asthma:58.2, rent:1498, income_k:44.8, completions_5yr:307, completions_per1k:5.6, pipeline_filed:250, pipeline_permitted:359, pipeline_withdrawn:152, pipeline_inactive:323, pipeline_stall_rate:57.0 } },
+  "211":{ housing:38, cost_of_living:9, health:66, economic:87, _raw:{ hpd_per_1k:208.8, life_exp:78.9, asthma:71.8, rent:1386, income_k:38.6, completions_5yr:640, completions_per1k:14.0, pipeline_filed:779, pipeline_permitted:865, pipeline_withdrawn:203, pipeline_inactive:306, pipeline_stall_rate:37.0 } },
+  "212":{ housing:31, cost_of_living:10, health:60, economic:84, _raw:{ hpd_per_1k:190.2, life_exp:79.3, asthma:64.3, rent:1412, income_k:42.1, completions_5yr:2439, completions_per1k:40.7, pipeline_filed:754, pipeline_permitted:1064, pipeline_withdrawn:185, pipeline_inactive:343, pipeline_stall_rate:33.2 } },
+  "301":{ housing:28, cost_of_living:36, health:44, economic:71, _raw:{ hpd_per_1k:198.4, life_exp:80.2, asthma:41.2, rent:2248, income_k:58.4, completions_5yr:10401, completions_per1k:115.6, pipeline_filed:3552, pipeline_permitted:3970, pipeline_withdrawn:3524, pipeline_inactive:2156, pipeline_stall_rate:58.9 } },
+  "302":{ housing:24, cost_of_living:44, health:40, economic:68, _raw:{ hpd_per_1k:214.6, life_exp:80.8, asthma:38.6, rent:2486, income_k:62.8, completions_5yr:7643, completions_per1k:116.3, pipeline_filed:1246, pipeline_permitted:3175, pipeline_withdrawn:1207, pipeline_inactive:432, pipeline_stall_rate:34.0 } },
+  "303":{ housing:50, cost_of_living:19, health:75, economic:82, _raw:{ hpd_per_1k:386.2, life_exp:76.9, asthma:68.1, rent:1698, income_k:44.6, completions_5yr:4973, completions_per1k:68.5, pipeline_filed:740, pipeline_permitted:1408, pipeline_withdrawn:1782, pipeline_inactive:895, pipeline_stall_rate:65.5 } },
+  "304":{ housing:45, cost_of_living:28, health:63, economic:80, _raw:{ hpd_per_1k:312.8, life_exp:78.1, asthma:56.4, rent:1986, income_k:48.2, completions_5yr:3033, completions_per1k:64.1, pipeline_filed:665, pipeline_permitted:1255, pipeline_withdrawn:1192, pipeline_inactive:949, pipeline_stall_rate:63.0 } },
+  "305":{ housing:44, cost_of_living:13, health:78, economic:87, _raw:{ hpd_per_1k:422.4, life_exp:76.8, asthma:72.8, rent:1524, income_k:38.4, completions_5yr:5733, completions_per1k:78.6, pipeline_filed:1814, pipeline_permitted:3187, pipeline_withdrawn:713, pipeline_inactive:1069, pipeline_stall_rate:35.9 } },
+  "306":{ housing:20, cost_of_living:55, health:23, economic:41, _raw:{ hpd_per_1k:88.4, life_exp:82.4, asthma:22.4, rent:2842, income_k:96.8, completions_5yr:2065, completions_per1k:37.8, pipeline_filed:1359, pipeline_permitted:6636, pipeline_withdrawn:930, pipeline_inactive:409, pipeline_stall_rate:16.8 } },
+  "307":{ housing:39, cost_of_living:20, health:53, economic:81, _raw:{ hpd_per_1k:248.6, life_exp:79.6, asthma:51.3, rent:1748, income_k:46.8, completions_5yr:1529, completions_per1k:33.3, pipeline_filed:120, pipeline_permitted:1367, pipeline_withdrawn:561, pipeline_inactive:518, pipeline_stall_rate:44.1 } },
+  "308":{ housing:46, cost_of_living:18, health:71, economic:84, _raw:{ hpd_per_1k:348.2, life_exp:77.3, asthma:63.9, rent:1684, income_k:42.6, completions_5yr:3022, completions_per1k:60.8, pipeline_filed:857, pipeline_permitted:1450, pipeline_withdrawn:988, pipeline_inactive:1016, pipeline_stall_rate:58.0 } },
+  "309":{ housing:50, cost_of_living:17, health:73, economic:85, _raw:{ hpd_per_1k:364.8, life_exp:77.1, asthma:65.4, rent:1648, income_k:41.8, completions_5yr:1891, completions_per1k:46.3, pipeline_filed:1295, pipeline_permitted:1038, pipeline_withdrawn:899, pipeline_inactive:649, pipeline_stall_rate:59.9 } },
+  "310":{ housing:45, cost_of_living:25, health:42, economic:68, _raw:{ hpd_per_1k:142.6, life_exp:80.3, asthma:38.2, rent:1894, income_k:62.4, completions_5yr:314, completions_per1k:5.7, pipeline_filed:65, pipeline_permitted:81, pipeline_withdrawn:98, pipeline_inactive:242, pipeline_stall_rate:80.8 } },
+  "311":{ housing:44, cost_of_living:13, health:39, economic:81, _raw:{ hpd_per_1k:168.4, life_exp:80.6, asthma:34.7, rent:1524, income_k:46.8, completions_5yr:986, completions_per1k:13.9, pipeline_filed:206, pipeline_permitted:159, pipeline_withdrawn:353, pipeline_inactive:144, pipeline_stall_rate:75.8 } },
+  "312":{ housing:49, cost_of_living:12, health:43, economic:84, _raw:{ hpd_per_1k:286.4, life_exp:80.1, asthma:38.1, rent:1486, income_k:42.4, completions_5yr:1153, completions_per1k:17.9, pipeline_filed:303, pipeline_permitted:413, pipeline_withdrawn:411, pipeline_inactive:363, pipeline_stall_rate:65.2 } },
+  "313":{ housing:33, cost_of_living:9, health:51, economic:83, _raw:{ hpd_per_1k:198.2, life_exp:79.4, asthma:45.2, rent:1398, income_k:44.2, completions_5yr:1992, completions_per1k:40.8, pipeline_filed:471, pipeline_permitted:1072, pipeline_withdrawn:146, pipeline_inactive:500, pipeline_stall_rate:37.6 } },
+  "314":{ housing:34, cost_of_living:15, health:47, economic:71, _raw:{ hpd_per_1k:152.4, life_exp:79.8, asthma:41.8, rent:1586, income_k:58.6, completions_5yr:2530, completions_per1k:41.0, pipeline_filed:163, pipeline_permitted:640, pipeline_withdrawn:547, pipeline_inactive:205, pipeline_stall_rate:54.0 } },
+  "315":{ housing:44, cost_of_living:13, health:65, economic:84, _raw:{ hpd_per_1k:224.6, life_exp:77.8, asthma:57.3, rent:1498, income_k:42.8, completions_5yr:870, completions_per1k:13.5, pipeline_filed:206, pipeline_permitted:395, pipeline_withdrawn:343, pipeline_inactive:207, pipeline_stall_rate:58.2 } },
+  "316":{ housing:47, cost_of_living:5, health:96, economic:95, _raw:{ hpd_per_1k:486.8, life_exp:75.1, asthma:89.6, rent:1248, income_k:28.6, completions_5yr:3195, completions_per1k:86.2, pipeline_filed:822, pipeline_permitted:1997, pipeline_withdrawn:559, pipeline_inactive:366, pipeline_stall_rate:31.7 } },
+  "317":{ housing:39, cost_of_living:13, health:71, economic:79, _raw:{ hpd_per_1k:242.8, life_exp:77.2, asthma:61.4, rent:1524, income_k:48.6, completions_5yr:3434, completions_per1k:54.6, pipeline_filed:1031, pipeline_permitted:1139, pipeline_withdrawn:820, pipeline_inactive:625, pipeline_stall_rate:55.9 } },
+  "318":{ housing:48, cost_of_living:17, health:52, economic:73, _raw:{ hpd_per_1k:148.6, life_exp:79.1, asthma:44.6, rent:1634, income_k:56.4, completions_5yr:184, completions_per1k:2.5, pipeline_filed:323, pipeline_permitted:70, pipeline_withdrawn:162, pipeline_inactive:439, pipeline_stall_rate:89.6 } },
+  "401":{ housing:35, cost_of_living:28, health:33, economic:68, _raw:{ hpd_per_1k:168.4, life_exp:81.9, asthma:36.8, rent:1986, income_k:62.4, completions_5yr:6579, completions_per1k:72.7, pipeline_filed:3658, pipeline_permitted:3184, pipeline_withdrawn:4584, pipeline_inactive:2880, pipeline_stall_rate:70.1 } },
+  "402":{ housing:25, cost_of_living:24, health:36, economic:73, _raw:{ hpd_per_1k:186.2, life_exp:81.4, asthma:38.4, rent:1848, income_k:56.8, completions_5yr:8473, completions_per1k:139.6, pipeline_filed:1416, pipeline_permitted:2237, pipeline_withdrawn:1571, pipeline_inactive:1566, pipeline_stall_rate:58.4 } },
+  "403":{ housing:48, cost_of_living:22, health:31, economic:79, _raw:{ hpd_per_1k:248.6, life_exp:82.6, asthma:41.2, rent:1798, income_k:48.6, completions_5yr:740, completions_per1k:12.6, pipeline_filed:66, pipeline_permitted:358, pipeline_withdrawn:303, pipeline_inactive:484, pipeline_stall_rate:68.7 } },
+  "404":{ housing:48, cost_of_living:20, health:36, economic:81, _raw:{ hpd_per_1k:262.4, life_exp:81.8, asthma:42.6, rent:1724, income_k:46.2, completions_5yr:1551, completions_per1k:26.7, pipeline_filed:860, pipeline_permitted:487, pipeline_withdrawn:575, pipeline_inactive:810, pipeline_stall_rate:74.0 } },
+  "405":{ housing:45, cost_of_living:19, health:37, economic:74, _raw:{ hpd_per_1k:148.8, life_exp:81.1, asthma:36.1, rent:1698, income_k:54.8, completions_5yr:748, completions_per1k:10.7, pipeline_filed:641, pipeline_permitted:202, pipeline_withdrawn:257, pipeline_inactive:746, pipeline_stall_rate:83.2 } },
+  "406":{ housing:38, cost_of_living:32, health:22, economic:64, _raw:{ hpd_per_1k:98.6, life_exp:83.2, asthma:28.4, rent:2124, income_k:68.4, completions_5yr:1163, completions_per1k:20.7, pipeline_filed:725, pipeline_permitted:613, pipeline_withdrawn:1448, pipeline_inactive:231, pipeline_stall_rate:73.3 } },
+  "407":{ housing:34, cost_of_living:28, health:18, economic:60, _raw:{ hpd_per_1k:112.4, life_exp:83.8, asthma:29.6, rent:1986, income_k:72.6, completions_5yr:2609, completions_per1k:25.3, pipeline_filed:793, pipeline_permitted:2823, pipeline_withdrawn:1482, pipeline_inactive:2125, pipeline_stall_rate:56.1 } },
+  "408":{ housing:38, cost_of_living:20, health:34, economic:71, _raw:{ hpd_per_1k:138.6, life_exp:81.6, asthma:36.8, rent:1748, income_k:58.4, completions_5yr:1056, completions_per1k:18.1, pipeline_filed:1087, pipeline_permitted:254, pipeline_withdrawn:167, pipeline_inactive:281, pipeline_stall_rate:63.8 } },
+  "409":{ housing:43, cost_of_living:16, health:44, economic:75, _raw:{ hpd_per_1k:168.4, life_exp:80.4, asthma:44.2, rent:1624, income_k:54.2, completions_5yr:542, completions_per1k:10.7, pipeline_filed:267, pipeline_permitted:313, pipeline_withdrawn:188, pipeline_inactive:538, pipeline_stall_rate:69.9 } },
+  "410":{ housing:39, cost_of_living:24, health:29, economic:60, _raw:{ hpd_per_1k:84.2, life_exp:82.1, asthma:31.8, rent:1848, income_k:72.8, completions_5yr:234, completions_per1k:5.4, pipeline_filed:238, pipeline_permitted:171, pipeline_withdrawn:192, pipeline_inactive:346, pipeline_stall_rate:75.9 } },
+  "411":{ housing:31, cost_of_living:28, health:12, economic:51, _raw:{ hpd_per_1k:62.4, life_exp:84.6, asthma:24.6, rent:1986, income_k:84.6, completions_5yr:365, completions_per1k:7.7, pipeline_filed:91, pipeline_permitted:334, pipeline_withdrawn:177, pipeline_inactive:179, pipeline_stall_rate:51.6 } },
+  "412":{ housing:39, cost_of_living:16, health:61, economic:71, _raw:{ hpd_per_1k:228.4, life_exp:78.9, asthma:62.4, rent:1598, income_k:58.4, completions_5yr:5130, completions_per1k:60.6, pipeline_filed:2197, pipeline_permitted:1813, pipeline_withdrawn:1145, pipeline_inactive:1694, pipeline_stall_rate:61.0 } },
+  "413":{ housing:44, cost_of_living:14, health:59, economic:73, _raw:{ hpd_per_1k:198.6, life_exp:79.1, asthma:58.8, rent:1548, income_k:56.2, completions_5yr:289, completions_per1k:4.4, pipeline_filed:656, pipeline_permitted:388, pipeline_withdrawn:184, pipeline_inactive:482, pipeline_stall_rate:63.2 } },
+  "414":{ housing:31, cost_of_living:16, health:62, economic:76, _raw:{ hpd_per_1k:186.4, life_exp:78.2, asthma:54.3, rent:1624, income_k:52.4, completions_5yr:3078, completions_per1k:64.2, pipeline_filed:1259, pipeline_permitted:1912, pipeline_withdrawn:851, pipeline_inactive:782, pipeline_stall_rate:46.1 } },
+  "501":{ housing:97, cost_of_living:13, health:46, economic:76, _raw:{ hpd_per_1k:886.9, life_exp:79.8, asthma:41.2, rent:1498, income_k:52.8, completions_5yr:949, completions_per1k:13.7, pipeline_filed:986, pipeline_permitted:415, pipeline_withdrawn:730, pipeline_inactive:1456, pipeline_stall_rate:84.0 } },
+  "502":{ housing:45, cost_of_living:16, health:35, economic:68, _raw:{ hpd_per_1k:184.2, life_exp:81.4, asthma:36.8, rent:1624, income_k:62.4, completions_5yr:445, completions_per1k:8.6, pipeline_filed:99, pipeline_permitted:293, pipeline_withdrawn:134, pipeline_inactive:604, pipeline_stall_rate:71.6 } },
+  "503":{ housing:35, cost_of_living:22, health:22, economic:55, _raw:{ hpd_per_1k:68.8, life_exp:83.2, asthma:28.4, rent:1786, income_k:78.6, completions_5yr:1070, completions_per1k:17.1, pipeline_filed:411, pipeline_permitted:372, pipeline_withdrawn:144, pipeline_inactive:612, pipeline_stall_rate:67.0 } },
+};
+
 // ── REAL DATA (from vulnerability_scores.json) ────────────────────────────────
 const DISTRICTS = [
   { fips:"201", cd_name:"Mott Haven", borough:"Bronx", vulnerability_score:89.1, risk_tier:"Critical", color:"#d32f2f", indicators:{ snap_household_pct:51.52, child_poverty_pct:62.0, rent_burden_pct:61.9, unemployment_pct:12.4, noncitizen_pct:15.1 } },
@@ -1521,38 +1223,11 @@ const DISTRICTS = [
   { fips:"101", cd_name:"Battery Park/Tribeca", borough:"Manhattan", vulnerability_score:1.5, risk_tier:"Lower", color:"#388e3c", indicators:{ snap_household_pct:2.98, child_poverty_pct:1.3, rent_burden_pct:32.9, unemployment_pct:3.4, noncitizen_pct:10.45 } },
 ];
 
-const ALERTS_BY_LAYER = {
-  food: [
-    { severity:"Critical", district:"University Heights, Bronx",  body:"Vulnerability score +7.7pts this month. SNAP surge: 4.2% in 30 days.", action:"→ Emergency pantry capacity expansion" },
-    { severity:"High",     district:"East Tremont, Bronx",        body:"Pantry utilization at 89% capacity. 2.1 pantries per 10k food insecure.", action:"→ Deploy mobile food markets" },
-    { severity:"Medium",   district:"Brownsville, Brooklyn",      body:"311 food complaints up 23% this week.", action:"→ Monitor CFC partner capacity" },
-  ],
-  housing: [
-    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Open HPD violations up 12% this quarter. Class C (hazardous) cases unresolved avg 47 days.", action:"→ Escalate to HPD Emergency Repair Program" },
-    { severity:"High",     district:"East New York, Brooklyn",     body:"Eviction filings up 18% vs prior year. 340 households at imminent displacement risk.", action:"→ Deploy Right to Counsel outreach teams" },
-    { severity:"Medium",   district:"Brownsville, Brooklyn",       body:"Heat/hot water complaints spiked 31% in past 30 days — intersects with high food insecurity.", action:"→ Cross-refer to SCRIE and DRIE eligibility" },
-  ],
-  cost_of_living: [
-    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Median rent-to-income ratio reached 54%. Utility arrears up 9% from prior quarter.", action:"→ Flag for One-Shot Deal emergency assistance" },
-    { severity:"High",     district:"Jackson Heights, Queens",     body:"Rent growth YoY at 8.4% — outpacing income growth by 3.1x. High noncitizen population limits relief access.", action:"→ Expand multilingual cost assistance outreach" },
-    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Grocery store density fell 2 locations since 2022. Cost burden intersects with SNAP gap.", action:"→ Assess Health Bucks and Fresh program uptake" },
-  ],
-  health: [
-    { severity:"Critical", district:"Hunts Point, Bronx",         body:"Asthma hospitalization rate 96/10k — 6× citywide average. Life expectancy 76.1 yrs vs 86 UES.", action:"→ Prioritize FQHC co-location and asthma home remediation" },
-    { severity:"High",     district:"Brownsville, Brooklyn",       body:"Chronic disease rate 31% of adult population. Mental health access score 22/100.", action:"→ Expand mobile health unit coverage Tue/Thu" },
-    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Pediatric asthma ER visits up 14% this year. Correlates with mold-related HPD violations.", action:"→ Joint HPD/DOHMH building inspection referrals" },
-  ],
-  economic: [
-    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Median household income $22.4k — 85% below citywide median. Unemployment 12.4%.", action:"→ Connect to Workforce1 career centers and SNAP-Ed" },
-    { severity:"High",     district:"Hunts Point, Bronx",         body:"Industrial rezoning risk: 340 food-sector jobs at displacement risk in next 18 months.", action:"→ Engage with EDC on food manufacturing retention" },
-    { severity:"Medium",   district:"East New York, Brooklyn",     body:"Business closure rate 11.2%/yr — above borough average. Grocery and pharmacy gaps widening.", action:"→ SBS small business stabilization referrals" },
-  ],
-  equity: [
-    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Top-ranked district across 4 of 5 dimensions. Compounding vulnerability in food, housing, health, and economic stress.", action:"→ Priority target for cross-agency coordination" },
-    { severity:"High",     district:"Brownsville, Brooklyn",       body:"Ranks Critical on 3 dimensions simultaneously — highest multi-dimensional risk in Brooklyn.", action:"→ Convene MOFP + HPD + DOHMH joint site visit" },
-    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Equity score deteriorating: +6pts stress increase across 2 dimensions in 90 days.", action:"→ Schedule equity brief for Manhattan CB11" },
-  ],
-};
+const ALERTS = [
+  { severity:"Critical", district:"University Heights, Bronx",  body:"Vulnerability score +7.7pts this month. SNAP surge: 4.2% in 30 days.", action:"→ Emergency pantry capacity expansion" },
+  { severity:"High",     district:"East Tremont, Bronx",        body:"Pantry utilization at 89% capacity. 2.1 pantries per 10k food insecure.", action:"→ Deploy mobile food markets" },
+  { severity:"Medium",   district:"Brownsville, Brooklyn",      body:"311 food complaints up 23% this week.", action:"→ Monitor CFC partner capacity" },
+];
 
 const TREND_DATA = {
   labels: [2019, 2020, 2021, 2022, 2023, 2024],
@@ -1587,650 +1262,13 @@ const PANTRIES = [
   { lat: 40.6368, lng: -74.0741, name: "Staten Island - St. George" },
 ];
 
-// ── LAYER SCORES — real data, all 59 community districts ─────────────────────
-// housing:    HPD open violations/1k HH (NYC Open Data API + HVS 2021 supplement)
-// health:     DOHMH life expectancy + asthma rates (Community Health Profiles 2018)
-// cost_of_living: median gross rent (NYC HVS 2021 + StreetEasy 2023)
-// economic:   median household income inverse (ACS 5-yr 2021, NYC DCP profiles)
-// _raw:       actual indicator values for display — no formulas
-const LAYER_SCORES = {
-  "101":{ housing:0, cost_of_living:86, health:24, economic:29, _raw:{ hpd_per_1k:42.8, life_exp:82.3, asthma:24.1, rent:3842, income_k:112.4 } },
-  "102":{ housing:26, cost_of_living:80, health:25, economic:25, _raw:{ hpd_per_1k:259.1, life_exp:82.1, asthma:22.8, rent:3648, income_k:116.8 } },
-  "103":{ housing:52, cost_of_living:44, health:50, economic:66, _raw:{ hpd_per_1k:483.9, life_exp:79.8, asthma:48.6, rent:2486, income_k:64.8 } },
-  "104":{ housing:25, cost_of_living:64, health:35, economic:41, _raw:{ hpd_per_1k:251.8, life_exp:81.6, asthma:38.2, rent:3124, income_k:96.4 } },
-  "105":{ housing:1, cost_of_living:75, health:24, economic:51, _raw:{ hpd_per_1k:51.8, life_exp:82.8, asthma:29.4, rent:3486, income_k:84.2 } },
-  "106":{ housing:12, cost_of_living:81, health:12, economic:24, _raw:{ hpd_per_1k:146.0, life_exp:84.2, asthma:19.8, rent:3684, income_k:118.6 } },
-  "107":{ housing:23, cost_of_living:67, health:14, economic:32, _raw:{ hpd_per_1k:239.8, life_exp:84.1, asthma:24.3, rent:3248, income_k:108.4 } },
-  "108":{ housing:13, cost_of_living:100, health:0, economic:0, _raw:{ hpd_per_1k:155.7, life_exp:86.0, asthma:16.2, rent:4286, income_k:148.6 } },
-  "109":{ housing:44, cost_of_living:28, health:59, economic:74, _raw:{ hpd_per_1k:412.6, life_exp:79.3, asthma:62.4, rent:1986, income_k:54.8 } },
-  "110":{ housing:75, cost_of_living:23, health:73, economic:82, _raw:{ hpd_per_1k:680.0, life_exp:77.8, asthma:74.8, rent:1842, income_k:44.6 } },
-  "111":{ housing:59, cost_of_living:20, health:72, economic:87, _raw:{ hpd_per_1k:542.2, life_exp:78.4, asthma:78.3, rent:1748, income_k:38.4 } },
-  "112":{ housing:64, cost_of_living:20, health:53, economic:80, _raw:{ hpd_per_1k:580.0, life_exp:80.2, asthma:58.9, rent:1724, income_k:48.2 } },
-  "201":{ housing:25, cost_of_living:2, health:96, economic:100, _raw:{ hpd_per_1k:255.4, life_exp:75.8, asthma:98.4, rent:1148, income_k:22.4 } },
-  "202":{ housing:38, cost_of_living:0, health:93, economic:99, _raw:{ hpd_per_1k:364.6, life_exp:76.1, asthma:96.1, rent:1098, income_k:23.1 } },
-  "203":{ housing:40, cost_of_living:1, health:92, economic:98, _raw:{ hpd_per_1k:384.1, life_exp:76.3, asthma:94.8, rent:1124, income_k:24.8 } },
-  "204":{ housing:65, cost_of_living:2, health:88, economic:97, _raw:{ hpd_per_1k:590.7, life_exp:76.6, asthma:91.2, rent:1162, income_k:26.2 } },
-  "205":{ housing:84, cost_of_living:3, health:88, economic:98, _raw:{ hpd_per_1k:755.4, life_exp:76.4, asthma:89.6, rent:1189, income_k:24.6 } },
-  "206":{ housing:57, cost_of_living:1, health:93, economic:99, _raw:{ hpd_per_1k:519.8, life_exp:75.9, asthma:93.7, rent:1134, income_k:24.1 } },
-  "207":{ housing:99, cost_of_living:6, health:81, economic:95, _raw:{ hpd_per_1k:881.4, life_exp:77.2, asthma:82.4, rent:1298, income_k:28.4 } },
-  "208":{ housing:13, cost_of_living:17, health:46, economic:76, _raw:{ hpd_per_1k:155.7, life_exp:80.1, asthma:44.1, rent:1642, income_k:52.8 } },
-  "209":{ housing:21, cost_of_living:5, health:76, economic:92, _raw:{ hpd_per_1k:219.2, life_exp:77.8, asthma:79.3, rent:1248, income_k:32.6 } },
-  "210":{ housing:4, cost_of_living:13, health:56, economic:82, _raw:{ hpd_per_1k:74.1, life_exp:79.6, asthma:58.2, rent:1498, income_k:44.8 } },
-  "211":{ housing:20, cost_of_living:9, health:66, economic:87, _raw:{ hpd_per_1k:208.8, life_exp:78.9, asthma:71.8, rent:1386, income_k:38.6 } },
-  "212":{ housing:17, cost_of_living:10, health:60, economic:84, _raw:{ hpd_per_1k:190.2, life_exp:79.3, asthma:64.3, rent:1412, income_k:42.1 } },
-  "301":{ housing:18, cost_of_living:36, health:44, economic:71, _raw:{ hpd_per_1k:198.4, life_exp:80.2, asthma:41.2, rent:2248, income_k:58.4 } },
-  "302":{ housing:20, cost_of_living:44, health:40, economic:68, _raw:{ hpd_per_1k:214.6, life_exp:80.8, asthma:38.6, rent:2486, income_k:62.8 } },
-  "303":{ housing:41, cost_of_living:19, health:75, economic:82, _raw:{ hpd_per_1k:386.2, life_exp:76.9, asthma:68.1, rent:1698, income_k:44.6 } },
-  "304":{ housing:32, cost_of_living:28, health:63, economic:80, _raw:{ hpd_per_1k:312.8, life_exp:78.1, asthma:56.4, rent:1986, income_k:48.2 } },
-  "305":{ housing:45, cost_of_living:13, health:78, economic:87, _raw:{ hpd_per_1k:422.4, life_exp:76.8, asthma:72.8, rent:1524, income_k:38.4 } },
-  "306":{ housing:5, cost_of_living:55, health:23, economic:41, _raw:{ hpd_per_1k:88.4, life_exp:82.4, asthma:22.4, rent:2842, income_k:96.8 } },
-  "307":{ housing:24, cost_of_living:20, health:53, economic:81, _raw:{ hpd_per_1k:248.6, life_exp:79.6, asthma:51.3, rent:1748, income_k:46.8 } },
-  "308":{ housing:36, cost_of_living:18, health:71, economic:84, _raw:{ hpd_per_1k:348.2, life_exp:77.3, asthma:63.9, rent:1684, income_k:42.6 } },
-  "309":{ housing:38, cost_of_living:17, health:73, economic:85, _raw:{ hpd_per_1k:364.8, life_exp:77.1, asthma:65.4, rent:1648, income_k:41.8 } },
-  "310":{ housing:12, cost_of_living:25, health:42, economic:68, _raw:{ hpd_per_1k:142.6, life_exp:80.3, asthma:38.2, rent:1894, income_k:62.4 } },
-  "311":{ housing:15, cost_of_living:13, health:39, economic:81, _raw:{ hpd_per_1k:168.4, life_exp:80.6, asthma:34.7, rent:1524, income_k:46.8 } },
-  "312":{ housing:29, cost_of_living:12, health:43, economic:84, _raw:{ hpd_per_1k:286.4, life_exp:80.1, asthma:38.1, rent:1486, income_k:42.4 } },
-  "313":{ housing:18, cost_of_living:9, health:51, economic:83, _raw:{ hpd_per_1k:198.2, life_exp:79.4, asthma:45.2, rent:1398, income_k:44.2 } },
-  "314":{ housing:13, cost_of_living:15, health:47, economic:71, _raw:{ hpd_per_1k:152.4, life_exp:79.8, asthma:41.8, rent:1586, income_k:58.6 } },
-  "315":{ housing:22, cost_of_living:13, health:65, economic:84, _raw:{ hpd_per_1k:224.6, life_exp:77.8, asthma:57.3, rent:1498, income_k:42.8 } },
-  "316":{ housing:53, cost_of_living:5, health:96, economic:95, _raw:{ hpd_per_1k:486.8, life_exp:75.1, asthma:89.6, rent:1248, income_k:28.6 } },
-  "317":{ housing:24, cost_of_living:13, health:71, economic:79, _raw:{ hpd_per_1k:242.8, life_exp:77.2, asthma:61.4, rent:1524, income_k:48.6 } },
-  "318":{ housing:13, cost_of_living:17, health:52, economic:73, _raw:{ hpd_per_1k:148.6, life_exp:79.1, asthma:44.6, rent:1634, income_k:56.4 } },
-  "401":{ housing:15, cost_of_living:28, health:33, economic:68, _raw:{ hpd_per_1k:168.4, life_exp:81.9, asthma:36.8, rent:1986, income_k:62.4 } },
-  "402":{ housing:17, cost_of_living:24, health:36, economic:73, _raw:{ hpd_per_1k:186.2, life_exp:81.4, asthma:38.4, rent:1848, income_k:56.8 } },
-  "403":{ housing:24, cost_of_living:22, health:31, economic:79, _raw:{ hpd_per_1k:248.6, life_exp:82.6, asthma:41.2, rent:1798, income_k:48.6 } },
-  "404":{ housing:26, cost_of_living:20, health:36, economic:81, _raw:{ hpd_per_1k:262.4, life_exp:81.8, asthma:42.6, rent:1724, income_k:46.2 } },
-  "405":{ housing:13, cost_of_living:19, health:37, economic:74, _raw:{ hpd_per_1k:148.8, life_exp:81.1, asthma:36.1, rent:1698, income_k:54.8 } },
-  "406":{ housing:7, cost_of_living:32, health:22, economic:64, _raw:{ hpd_per_1k:98.6, life_exp:83.2, asthma:28.4, rent:2124, income_k:68.4 } },
-  "407":{ housing:8, cost_of_living:28, health:18, economic:60, _raw:{ hpd_per_1k:112.4, life_exp:83.8, asthma:29.6, rent:1986, income_k:72.6 } },
-  "408":{ housing:11, cost_of_living:20, health:34, economic:71, _raw:{ hpd_per_1k:138.6, life_exp:81.6, asthma:36.8, rent:1748, income_k:58.4 } },
-  "409":{ housing:15, cost_of_living:16, health:44, economic:75, _raw:{ hpd_per_1k:168.4, life_exp:80.4, asthma:44.2, rent:1624, income_k:54.2 } },
-  "410":{ housing:5, cost_of_living:24, health:29, economic:60, _raw:{ hpd_per_1k:84.2, life_exp:82.1, asthma:31.8, rent:1848, income_k:72.8 } },
-  "411":{ housing:2, cost_of_living:28, health:12, economic:51, _raw:{ hpd_per_1k:62.4, life_exp:84.6, asthma:24.6, rent:1986, income_k:84.6 } },
-  "412":{ housing:22, cost_of_living:16, health:61, economic:71, _raw:{ hpd_per_1k:228.4, life_exp:78.9, asthma:62.4, rent:1598, income_k:58.4 } },
-  "413":{ housing:18, cost_of_living:14, health:59, economic:73, _raw:{ hpd_per_1k:198.6, life_exp:79.1, asthma:58.8, rent:1548, income_k:56.2 } },
-  "414":{ housing:17, cost_of_living:16, health:62, economic:76, _raw:{ hpd_per_1k:186.4, life_exp:78.2, asthma:54.3, rent:1624, income_k:52.4 } },
-  "501":{ housing:100, cost_of_living:13, health:46, economic:76, _raw:{ hpd_per_1k:886.9, life_exp:79.8, asthma:41.2, rent:1498, income_k:52.8 } },
-  "502":{ housing:17, cost_of_living:16, health:35, economic:68, _raw:{ hpd_per_1k:184.2, life_exp:81.4, asthma:36.8, rent:1624, income_k:62.4 } },
-  "503":{ housing:3, cost_of_living:22, health:22, economic:55, _raw:{ hpd_per_1k:68.8, life_exp:83.2, asthma:28.4, rent:1786, income_k:78.6 } },
-};
-
-// ── LAYER CONFIGURATION ───────────────────────────────────────────────────────
-const LAYER_CONFIG = {
-  food: {
-    label: 'FOOD VULNERABILITY',
-    thresholds: [60, 45, 25],
-    tierLabels: ['Critical','High','Moderate','Lower'],
-    colors: ['#d32f2f','#f57c00','#fbc02d','#388e3c'],
-    accentColor: '#ff4d1c',
-    chips: [
-      { text:'Which neighborhoods will be hit hardest by SNAP work requirements?', label:'SNAP WORK REQUIREMENTS' },
-      { text:'Where are the worst pantry gaps?', label:'PANTRY GAPS' },
-      { text:'Generate a policy memo for the Bronx', label:'POLICY MEMO' },
-      { text:'Predict SNAP impact of federal cuts', label:'PREDICT IMPACT' },
-    ],
-  },
-  housing: {
-    label: 'HOUSING STABILITY',
-    thresholds: [70, 50, 30],
-    tierLabels: ['Critical','High','Moderate','Stable'],
-    colors: ['#6a1b9a','#ab47bc','#ce93d8','#388e3c'],
-    accentColor: '#ab47bc',
-    chips: [
-      { text:'Which districts have the highest housing code violation rates?', label:'HPD VIOLATIONS' },
-      { text:'Where is displacement risk highest right now?', label:'DISPLACEMENT RISK' },
-      { text:'How does housing instability connect to food insecurity?', label:'HOUSING + FOOD LINK' },
-      { text:'Where would affordable housing investment have the most impact?', label:'INVESTMENT TARGETS' },
-    ],
-  },
-  cost_of_living: {
-    label: 'COST OF LIVING',
-    thresholds: [75, 55, 35],
-    tierLabels: ['Critical','High','Moderate','Lower'],
-    colors: ['#bf360c','#ef6c00','#ffa726','#388e3c'],
-    accentColor: '#ff9800',
-    chips: [
-      { text:'Which neighborhoods have the worst rent-to-income ratios?', label:'RENT BURDEN' },
-      { text:'Where is rent growing fastest and who is most at risk?', label:'RENT GROWTH' },
-      { text:'How do rising costs affect SNAP utilization?', label:'COST + SNAP LINK' },
-      { text:'Which districts need immediate cost-of-living relief programs?', label:'RELIEF TARGETS' },
-    ],
-  },
-  health: {
-    label: 'HEALTH BURDEN',
-    thresholds: [70, 50, 30],
-    tierLabels: ['Critical','High','Moderate','Lower'],
-    colors: ['#0d47a1','#1976d2','#64b5f6','#388e3c'],
-    accentColor: '#42a5f5',
-    chips: [
-      { text:'Which districts have the lowest life expectancy and why?', label:'LIFE EXPECTANCY' },
-      { text:'Where are asthma and chronic disease rates highest?', label:'CHRONIC DISEASE' },
-      { text:'How does food insecurity drive poor health outcomes in the Bronx?', label:'FOOD + HEALTH LINK' },
-      { text:'Which neighborhoods need health infrastructure investment most urgently?', label:'HEALTH INVESTMENT' },
-    ],
-  },
-  economic: {
-    label: 'ECONOMIC STRESS',
-    thresholds: [70, 50, 30],
-    tierLabels: ['Critical','High','Moderate','Lower'],
-    colors: ['#004d40','#00897b','#4db6ac','#388e3c'],
-    accentColor: '#26a69a',
-    chips: [
-      { text:'Which neighborhoods have the highest unemployment and lowest income growth?', label:'UNEMPLOYMENT' },
-      { text:'Where are businesses closing fastest?', label:'BUSINESS CLOSURES' },
-      { text:'How does economic stress predict future food insecurity?', label:'ECONOMIC + FOOD LINK' },
-      { text:'Where would workforce development investment have the highest return?', label:'INVESTMENT ROI' },
-    ],
-  },
-  equity: {
-    label: 'EQUITY SCORE',
-    thresholds: [70, 50, 30],
-    tierLabels: ['Critical','High','Moderate','Lower'],
-    colors: ['#b71c1c','#e65100','#f9a825','#388e3c'],
-    accentColor: '#ffd54f',
-    chips: [
-      { text:'Which neighborhoods rank worst across all 5 dimensions combined?', label:'WORST OVERALL' },
-      { text:'If I have $5M to allocate, where does it have the most impact?', label:'FUND ALLOCATION' },
-      { text:'Which neighborhoods are improving and which are deteriorating?', label:'TRENDS' },
-      { text:'Generate a full equity brief for the top 5 most vulnerable districts', label:'EQUITY BRIEF' },
-    ],
-  },
-};
-
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let selectedDistrict = null;
 let currentFilter    = 'All';
 let currentFormat    = 'Memo';
+let currentLayer     = 'food';
+let currentAgency    = 'MOFP';
 let map;
-let geojsonLayer     = null;
-let activeLayer      = 'food';
-let currentLens      = 'MOFP';
-
-// ── AGENCY LENSES ─────────────────────────────────────────────────────────────
-// Each lens pre-selects a layer and swaps in agency-specific context
-const AGENCY_LENSES = {
-  MOFP: {
-    label: "MAYOR'S OFFICE OF FOOD POLICY",
-    layer: 'food',
-  },
-  HPD: {
-    label: 'HOUSING PRESERVATION & DEVELOPMENT',
-    layer: 'housing',
-  },
-  DOHMH: {
-    label: 'DEPT OF HEALTH & MENTAL HYGIENE',
-    layer: 'health',
-  },
-};
-
-function switchAgencyLens(lens) {
-  currentLens = lens;
-  const cfg = AGENCY_LENSES[lens];
-
-  // Highlight active lens button
-  document.querySelectorAll('.agency-lens-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.lens === lens);
-  });
-
-  // Update topbar agency label
-  document.getElementById('active-agency-label').textContent = cfg.label;
-
-  // Switch to the lens's default data layer
-  switchLayer(cfg.layer);
-}
-
-// ── LENS-WEIGHTED EQUITY SCORE ────────────────────────────────────────────────
-// Each agency lens weights the 5 dimensions differently.
-// MOFP leads with food, HPD leads with housing, DOHMH leads with health.
-const LENS_WEIGHTS = {
-  MOFP:  { food: 0.40, housing: 0.15, cost_of_living: 0.15, health: 0.15, economic: 0.15 },
-  HPD:   { food: 0.15, housing: 0.40, cost_of_living: 0.20, health: 0.10, economic: 0.15 },
-  DOHMH: { food: 0.15, housing: 0.15, cost_of_living: 0.15, health: 0.40, economic: 0.15 },
-  _flat: { food: 0.20, housing: 0.20, cost_of_living: 0.20, health: 0.20, economic: 0.20 },
-};
-
-function computeEquityScore(d, lens) {
-  const w  = LENS_WEIGHTS[lens] || LENS_WEIGHTS._flat;
-  const ls = LAYER_SCORES[d.fips] || {};
-  return Math.round(
-    d.vulnerability_score       * w.food +
-    (ls.housing        || 50)   * w.housing +
-    (ls.cost_of_living || 50)   * w.cost_of_living +
-    (ls.health         || 50)   * w.health +
-    (ls.economic       || 50)   * w.economic
-  );
-}
-
-// ── LAYER HELPERS ─────────────────────────────────────────────────────────────
-function getDistrictLayerScore(d) {
-  if (activeLayer === 'food') return d.vulnerability_score;
-  if (activeLayer === 'equity') return computeEquityScore(d, currentLens);
-  const s = LAYER_SCORES[d.fips];
-  return s ? s[activeLayer] : Math.round(d.vulnerability_score * 0.6);
-}
-
-function getDistrictLayerTier(score) {
-  const cfg = LAYER_CONFIG[activeLayer];
-  const [t1, t2, t3] = cfg.thresholds;
-  if (score >= t1) return { tier: cfg.tierLabels[0], color: cfg.colors[0] };
-  if (score >= t2) return { tier: cfg.tierLabels[1], color: cfg.colors[1] };
-  if (score >= t3) return { tier: cfg.tierLabels[2], color: cfg.colors[2] };
-  return { tier: cfg.tierLabels[3], color: cfg.colors[3] };
-}
-
-function featureStyle(feature) {
-  const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
-  const district = getDistrictData(fips);
-  if (!district) return { fillColor: getFallbackColor(fips), fillOpacity: 0.2, color: '#1e1e32', weight: 1, opacity: 0.8 };
-  const score = getDistrictLayerScore(district);
-  const { color } = getDistrictLayerTier(score);
-  return { fillColor: color, fillOpacity: 0.75, color: '#1e1e32', weight: 1, opacity: 0.8 };
-}
-
-function buildTooltip(district) {
-  const score  = getDistrictLayerScore(district);
-  const { tier, color } = getDistrictLayerTier(score);
-  if (activeLayer === 'food') {
-    return `<strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
-      Score: <span style="color:#ff4d1c;font-weight:500">${district.vulnerability_score} ${district.risk_tier.toUpperCase()}</span><br>
-      SNAP Enrollment: ${district.indicators.snap_household_pct.toFixed(1)}%<br>
-      Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
-      Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}%<br>
-      Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%<br>
-      Non-citizen Pop: ${district.indicators.noncitizen_pct.toFixed(1)}%`;
-  }
-  const cfg = LAYER_CONFIG[activeLayer];
-  return `<strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
-    <span style="color:${color};font-weight:500">${cfg.label}: ${score}/100 — ${tier}</span>`;
-}
-
-function renderMapLegend() {
-  const cfg = LAYER_CONFIG[activeLayer];
-  const el  = document.getElementById('map-legend');
-  el.innerHTML = `
-    <div class="legend-title">${cfg.label}</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[0]}"></div>${cfg.tierLabels[0]}</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[1]}"></div>${cfg.tierLabels[1]}</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[2]}"></div>${cfg.tierLabels[2]}</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:${cfg.colors[3]}"></div>${cfg.tierLabels[3]}</div>
-    ${activeLayer === 'food' ? '<div class="legend-item"><div class="legend-dot-marker"></div>Food Pantry</div>' : ''}
-  `;
-}
-
-function renderLayerChips() {
-  const cfg     = LAYER_CONFIG[activeLayer];
-  const chipRow = document.querySelector('.chip-row');
-  chipRow.innerHTML = cfg.chips.map(c =>
-    `<button class="chip" onclick="sendChip('${c.text.replace(/'/g, "&#39;")}')">${c.label}</button>`
-  ).join('');
-}
-
-function getLayerIndicators(district) {
-  const ls = LAYER_SCORES[district.fips] || {};
-
-  if (activeLayer === 'food') {
-    return INDICATOR_CONFIG.map(cfg => ({
-      label: cfg.label, val: district.indicators[cfg.key] || 0, max: 100, color: cfg.color, suffix: '%',
-    }));
-  }
-
-  if (activeLayer === 'housing') {
-    const s = ls.housing || 50;
-    const r = ls._raw || {};
-    return [
-      { label:'Housing Stress Index',  val: s,                                   max: 100, color:'#9c27b0', suffix:'/100' },
-      { label:'HPD Violations /1k HH', val: r.hpd_per_1k || 0,                  max: 900, color:'#ab47bc', suffix:'' },
-      { label:'Rent Burden',           val: district.indicators.rent_burden_pct, max: 65,  color:'#ba68c8', suffix:'%' },
-      { label:'Median Rent',           val: r.rent || 0,                         max: 4500,color:'#ce93d8', suffix:'/mo', prefix:'$' },
-      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),  max: 20,  color:'#9c27b0', suffix:'',    modeled: true },
-    ];
-  }
-
-  if (activeLayer === 'cost_of_living') {
-    const s = ls.cost_of_living || 50;
-    const r = ls._raw || {};
-    return [
-      { label:'Cost Pressure Index', val: s,                                      max: 100,  color:'#ef6c00', suffix:'/100' },
-      { label:'Median Rent',         val: r.rent || 0,                            max: 4500, color:'#f57c00', suffix:'/mo', prefix:'$' },
-      { label:'Rent Burden',         val: district.indicators.rent_burden_pct,    max: 65,   color:'#ff9800', suffix:'%' },
-      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),      max: 15,   color:'#ffa726', suffix:'%',   modeled: true },
-      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),      max: 15,   color:'#ffb74d', suffix:'%',   modeled: true },
-    ];
-  }
-
-  if (activeLayer === 'health') {
-    const s = ls.health || 50;
-    const r = ls._raw || {};
-    return [
-      { label:'Health Burden Index',  val: s,                                    max: 100, color:'#1976d2', suffix:'/100' },
-      { label:'Life Expectancy',      val: r.life_exp || 79,                     max: 87,  color:'#42a5f5', suffix:' yrs' },
-      { label:'Asthma Rate /10k',     val: r.asthma || 0,                        max: 100, color:'#1976d2', suffix:'' },
-      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),    max: 35,  color:'#64b5f6', suffix:'%',    modeled: true },
-      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),            max: 100, color:'#90caf9', suffix:'/100', modeled: true },
-    ];
-  }
-
-  if (activeLayer === 'economic') {
-    const s = ls.economic || 50;
-    const r = ls._raw || {};
-    return [
-      { label:'Economic Stress Index', val: s,                                    max: 100, color:'#00897b', suffix:'/100' },
-      { label:'Median Income',         val: r.income_k || 0,                      max: 150, color:'#26a69a', suffix:'k', prefix:'$' },
-      { label:'Unemployment',          val: district.indicators.unemployment_pct, max: 20,  color:'#4db6ac', suffix:'%' },
-      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),    max: 15,  color:'#00897b', suffix:'%/yr', modeled: true },
-      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),            max: 75,  color:'#80cbc4', suffix:'%',    modeled: true },
-    ];
-  }
-
-  if (activeLayer === 'equity') {
-    const equityScore = getDistrictLayerScore(district);
-    const hs = ls.housing || 50;
-    const cs = ls.cost_of_living || 50;
-    const he = ls.health || 50;
-    const ec = ls.economic || 50;
-    return [
-      { label:'Equity Score',       val: equityScore,                max: 100, color:'#ffd54f', suffix:'/100' },
-      { label:'Food Vulnerability', val: district.vulnerability_score, max: 100, color:'#d32f2f', suffix:'/100' },
-      { label:'Housing Stress',     val: hs,                          max: 100, color:'#9c27b0', suffix:'/100' },
-      { label:'Cost Pressure',      val: cs,                          max: 100, color:'#ef6c00', suffix:'/100' },
-      { label:'Health Burden',      val: he,                          max: 100, color:'#1976d2', suffix:'/100' },
-      { label:'Economic Stress',    val: ec,                          max: 100, color:'#00897b', suffix:'/100' },
-    ];
-  }
-
-  return [];
-}
-
-function renderStatCards() {
-  const el  = document.getElementById('stat-cards');
-  const cfg = LAYER_CONFIG[activeLayer];
-
-  // Count districts in each tier for the active layer
-  const counts = { 0: 0, 1: 0, 2: 0, 3: 0 };
-  DISTRICTS.forEach(d => {
-    const score = getDistrictLayerScore(d);
-    const [t1, t2, t3] = cfg.thresholds;
-    if      (score >= t1) counts[0]++;
-    else if (score >= t2) counts[1]++;
-    else if (score >= t3) counts[2]++;
-    else                  counts[3]++;
-  });
-
-  const cards = {
-    food: [
-      { val: '1.8M',           label: 'SNAP RECIPIENTS',     color: '' },
-      { val: counts[0],        label: 'CRITICAL DISTRICTS',  color: '#d32f2f' },
-      { val: '700+',           label: 'FOOD PANTRIES',       color: '' },
-      { val: '$186B',          label: 'CUTS INCOMING',       color: '#d32f2f' },
-    ],
-    housing: [
-      { val: counts[0],        label: 'CRITICAL DISTRICTS',  color: '#6a1b9a' },
-      { val: counts[0]+counts[1], label: 'HIGH+ STRESS',     color: '#ab47bc' },
-      { val: '226K+',          label: 'HPD VIOLATIONS/YR',   color: '' },
-      { val: '32%',            label: 'AT DISPLACEMENT RISK',color: '#ab47bc' },
-    ],
-    cost_of_living: [
-      { val: counts[0],        label: 'CRITICAL PRESSURE',   color: '#bf360c' },
-      { val: '$3,200',         label: 'MEDIAN NYC RENT',      color: '' },
-      { val: '58%',            label: 'RENT-BURDENED HH',    color: '#ef6c00' },
-      { val: '8.2%',           label: 'AVG RENT GROWTH YOY', color: '#ef6c00' },
-    ],
-    health: [
-      { val: counts[0],        label: 'CRITICAL BURDEN',     color: '#0d47a1' },
-      { val: '10 YRS',         label: 'LIFE EXP. GAP',       color: '#d32f2f' },
-      { val: '34%',            label: 'CHRONIC DISEASE RATE',color: '#1976d2' },
-      { val: counts[0]+counts[1], label: 'HIGH+ BURDEN DISTs',color: '#1976d2' },
-    ],
-    economic: [
-      { val: counts[0],        label: 'CRITICAL STRESS',     color: '#004d40' },
-      { val: '$48K',           label: 'MEDIAN INCOME (CITY)',color: '' },
-      { val: counts[0]+counts[1], label: 'HIGH+ STRESS DISTs',color: '#00897b' },
-      { val: '7.1%',           label: 'AVG UNEMPLOYMENT',    color: '#00897b' },
-    ],
-    equity: [
-      { val: counts[0],        label: 'CRITICAL EQUITY',     color: '#b71c1c' },
-      { val: counts[0]+counts[1], label: 'HIGH+ PRIORITY',   color: '#e65100' },
-      { val: '59',             label: 'DISTRICTS TRACKED',   color: '' },
-      { val: '5',              label: 'DIMENSIONS SCORED',   color: '' },
-    ],
-  };
-
-  const data = cards[activeLayer] || cards.food;
-  el.innerHTML = data.map(c => `
-    <div class="stat-card">
-      <div class="stat-val" style="${c.color ? 'color:' + c.color : ''}">${c.val}</div>
-      <div class="stat-label">${c.label}</div>
-    </div>
-  `).join('');
-}
-
-function switchLayer(layer) {
-  activeLayer = layer;
-  const cfg   = LAYER_CONFIG[layer];
-
-  // Reset gap view when switching layers
-  if (gapViewActive) {
-    gapViewActive = false;
-    const btn = document.getElementById('gap-toggle');
-    if (btn) { btn.classList.remove('active'); btn.textContent = '◈ GAP VIEW'; }
-  }
-
-  document.querySelectorAll('.layer-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.layer-tab[data-layer="${layer}"]`).classList.add('active');
-
-  document.querySelector('.sidebar-section .section-label').textContent = cfg.label + ' RANKING';
-  document.getElementById('map-header-text').textContent = `NYC · 59 COMMUNITY DISTRICTS · ${cfg.label}`;
-
-  renderDistrictList(currentFilter, document.getElementById('search-input').value);
-
-  if (geojsonLayer) {
-    geojsonLayer.setStyle(featureStyle);
-    geojsonLayer.eachLayer(l => {
-      const fips = l.feature?.properties?.BoroCD || l.feature?.properties?.boro_cd || l.feature?.properties?.BORO_CD;
-      const d = getDistrictData(fips);
-      if (d && l.getTooltip && l.getTooltip()) l.setTooltipContent(buildTooltip(d));
-    });
-  }
-
-  renderMapLegend();
-  renderLayerChips();
-  renderStatCards();
-  renderAlerts();
-  if (selectedDistrict) renderDistrictDetail(selectedDistrict);
-
-  // Keep agency lens buttons in sync with manual layer tab clicks
-  const lensForLayer = Object.keys(AGENCY_LENSES).find(k => AGENCY_LENSES[k].layer === layer);
-  document.querySelectorAll('.agency-lens-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.lens === lensForLayer);
-  });
-  if (lensForLayer) {
-    currentLens = lensForLayer;
-    document.getElementById('active-agency-label').textContent = AGENCY_LENSES[lensForLayer].label;
-  }
-}
-
-// ── GAP VIEW ─────────────────────────────────────────────────────────────────
-let gapViewActive = false;
-
-// Gap score = need (equity score) minus estimated investment coverage
-// Investment proxy: higher-scoring, more prominent districts get more resources
-// We use pantry density + historical funding patterns as a proxy
-function getGapScore(d) {
-  const equityScore = computeEquityScore(d, currentLens);
-  const rank = DISTRICTS.findIndex(x => x.fips === d.fips) + 1;
-  const boroughPenalty = d.borough === 'Bronx' ? 10 : 0;
-  const investmentProxy = Math.max(10, 100 - equityScore + boroughPenalty - (rank * 0.5));
-  const gap = Math.round(equityScore - (investmentProxy * 0.4));
-  return Math.min(100, Math.max(0, gap));
-}
-
-function getGapColor(score) {
-  if (score >= 65) return '#b71c1c'; // critical gap — high need, low investment
-  if (score >= 45) return '#e65100'; // significant gap
-  if (score >= 25) return '#f9a825'; // moderate gap
-  return '#388e3c';                  // gap is being addressed
-}
-
-function toggleGapView() {
-  gapViewActive = !gapViewActive;
-  const btn = document.getElementById('gap-toggle');
-  btn.classList.toggle('active', gapViewActive);
-  btn.textContent = gapViewActive ? '◈ GAP VIEW ON' : '◈ GAP VIEW';
-
-  if (geojsonLayer) {
-    geojsonLayer.setStyle(feature => {
-      const fips     = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
-      const district = getDistrictData(fips);
-      if (!district) return { fillColor: getFallbackColor(fips), fillOpacity: 0.2, color: '#1e1e32', weight: 1, opacity: 0.8 };
-      if (gapViewActive) {
-        const gap   = getGapScore(district);
-        const color = getGapColor(gap);
-        return { fillColor: color, fillOpacity: 0.82, color: '#1e1e32', weight: 1, opacity: 0.8 };
-      }
-      return featureStyle(feature);
-    });
-    // Update tooltips with gap data
-    geojsonLayer.eachLayer(l => {
-      const fips = l.feature?.properties?.BoroCD || l.feature?.properties?.boro_cd || l.feature?.properties?.BORO_CD;
-      const d    = getDistrictData(fips);
-      if (!d || !l.getTooltip?.()) return;
-      if (gapViewActive) {
-        const gap = getGapScore(d);
-        const ls  = LAYER_SCORES[d.fips] || {};
-        const eq  = Math.round((d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5);
-        l.setTooltipContent(
-          `<strong>${d.cd_name.toUpperCase()} — ${d.borough}</strong><br>
-           <span style="color:${getGapColor(gap)};font-weight:500">Need–Investment Gap: ${gap}/100</span><br>
-           Equity Score: ${eq}/100<br>
-           <em style="font-size:10px">${gap >= 65 ? '⚠ Critically underfunded relative to need' : gap >= 45 ? 'Significant funding gap' : 'Moderate gap'}</em>`
-        );
-      } else {
-        l.setTooltipContent(buildTooltip(d));
-      }
-    });
-  }
-
-  const legendEl = document.getElementById('map-legend');
-  if (gapViewActive) {
-    document.getElementById('map-header-text').textContent = 'NYC · 59 COMMUNITY DISTRICTS · NEED vs. INVESTMENT GAP';
-    legendEl.innerHTML = `
-      <div class="legend-title">GAP LEVEL</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#b71c1c"></div>Critical Gap</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#e65100"></div>Significant</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#f9a825"></div>Moderate</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#388e3c"></div>Addressed</div>
-    `;
-  } else {
-    document.getElementById('map-header-text').textContent = `NYC · 59 COMMUNITY DISTRICTS · ${LAYER_CONFIG[activeLayer].label}`;
-    renderMapLegend();
-  }
-}
-
-// ── AI PANEL TAB SWITCHER ─────────────────────────────────────────────────────
-function switchAITab(tab) {
-  document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  const aiContent       = document.getElementById('ai-content');
-  const scenarioContent = document.getElementById('scenario-content');
-  if (tab === 'ai') {
-    aiContent.style.display       = 'flex';
-    scenarioContent.style.display = 'none';
-  } else {
-    aiContent.style.display       = 'none';
-    scenarioContent.style.display = 'flex';
-    document.getElementById('scenario-layer-label').textContent =
-      LAYER_CONFIG[activeLayer].label;
-  }
-}
-
-// ── SCENARIO BUILDER ─────────────────────────────────────────────────────────
-function formatMoney(val) {
-  if (val >= 1000000) return '$' + (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (val >= 1000)    return '$' + Math.round(val / 1000) + 'K';
-  return '$' + val;
-}
-
-function syncBudgetFromSlider(val) {
-  const n = parseInt(val);
-  document.getElementById('scenario-budget-input').value = n.toLocaleString();
-}
-
-function syncBudgetFromInput(raw) {
-  const n = parseInt(raw.replace(/[^0-9]/g, '')) || 0;
-  const slider = document.getElementById('scenario-slider');
-  slider.value = Math.min(Math.max(n, 100000), 25000000);
-}
-
-function runScenario() {
-  const raw    = document.getElementById('scenario-budget-input').value;
-  const budget = parseInt(raw.replace(/[^0-9]/g, '')) || 1000000;
-
-  // Compute priority score per district using lens-weighted equity + active layer
-  const scored = DISTRICTS.map(d => {
-    const equityScore = computeEquityScore(d, currentLens);
-    const layerScore  = getDistrictLayerScore(d);
-    // Weight: 60% lens-weighted equity, 40% active layer
-    const priority = (equityScore * 0.6) + (layerScore * 0.4);
-    return { ...d, equityScore, layerScore, priority };
-  }).sort((a, b) => b.priority - a.priority);
-
-  // Determine how many districts to fund based on budget
-  const avgGrant = Math.max(50000, Math.round(budget / 12));
-  const topN     = Math.min(Math.max(3, Math.ceil(budget / avgGrant)), 12);
-  const top      = scored.slice(0, topN);
-
-  const totalPriority = top.reduce((s, d) => s + d.priority, 0);
-  let remaining = budget;
-  const allocs = top.map(d => {
-    const raw     = (d.priority / totalPriority) * budget * 0.93;
-    const alloc   = Math.round(raw / 10000) * 10000;
-    remaining    -= alloc;
-    const served  = Math.round(alloc / 24);
-    let progType;
-    if      (alloc >= 1200000) progType = 'New pantry site + SNAP center + mobile market';
-    else if (alloc >= 600000)  progType = 'New pantry site + mobile market deployment';
-    else if (alloc >= 300000)  progType = 'Pantry capacity expansion + SNAP outreach';
-    else if (alloc >= 100000)  progType = 'SNAP outreach + case worker expansion';
-    else                       progType = 'Mobile market deployment';
-    return { ...d, alloc, served, progType };
-  });
-
-  const totalServed = allocs.reduce((s, d) => s + d.served, 0);
-
-  const resultsEl = document.getElementById('scenario-results');
-  resultsEl.innerHTML = `
-    <div class="scenario-summary">
-      <div class="scenario-total">BUDGET: <span>${formatMoney(budget)}</span> · ${topN} DISTRICTS</div>
-      <div class="scenario-impact">Projected: <span>+${totalServed.toLocaleString()}</span> additional residents served/month</div>
-    </div>
-    ${allocs.map((d, i) => `
-      <div class="scenario-row">
-        <div class="scenario-rank">#${i+1}</div>
-        <div class="scenario-info">
-          <div class="scenario-name">${d.cd_name}</div>
-          <div class="scenario-borough">${d.borough} · Equity ${d.equityScore}/100</div>
-          <div class="scenario-type">→ ${d.progType}</div>
-        </div>
-        <div class="scenario-amount">${formatMoney(d.alloc)}</div>
-      </div>`).join('')}
-    ${remaining > 10000 ? `<div class="scenario-remainder">+ ${formatMoney(remaining)} → Citywide SNAP enrollment outreach</div>` : ''}
-    <button class="scenario-send-btn" onclick="sendScenarioToAI(${budget}, ${topN})">
-      ⚡ SEND TO AI FOR DEEPER ANALYSIS
-    </button>
-  `;
-}
-
-function sendScenarioToAI(budget, districts) {
-  switchAITab('ai');
-  const topDistricts = DISTRICTS.slice().sort((a, b) => getDistrictLayerScore(b) - getDistrictLayerScore(a)).slice(0, districts);
-  const distList = topDistricts.map((d, i) => `${i+1}. ${d.cd_name}, ${d.borough}`).join('; ');
-  sendChip(
-    `I have ${formatMoney(budget)} to allocate across NYC community districts. ` +
-    `The top priority districts based on equity scoring are: ${distList}. ` +
-    `Please provide a detailed policy memo with specific program recommendations, ` +
-    `projected impact, and implementation timeline for this allocation.`
-  );
-}
 
 // ── FORMAT SELECTOR ────────────────────────────────────────────────────────────
 function setFormat(fmt, btn) {
@@ -2249,27 +1287,11 @@ const TOP10_DISTRICTS = DISTRICTS.slice(0, 10).map((d, i) => ({
   rank:    i + 1,
 }));
 
-// Pantry density per Critical/High district — pantries per 10k food-insecure residents.
-// Estimated food-insecure population = district SNAP enrollment % × ~30k avg CD population.
-// Lower density = higher gap. Sent to AI as actionable coverage context.
+// Pantry coverage grouped by area name
 const PANTRY_COVERAGE = (() => {
-  const boroughPantryCount = { 'Bronx': 7, 'Brooklyn': 4, 'Manhattan': 4, 'Queens': 1, 'Staten Island': 1 };
-  return DISTRICTS
-    .filter(d => d.risk_tier === 'Critical' || d.risk_tier === 'High')
-    .map(d => {
-      const pantries     = boroughPantryCount[d.borough] || 1;
-      const snapPop      = Math.round((d.indicators.snap_household_pct / 100) * 30000);
-      const density      = snapPop > 0 ? parseFloat((pantries / snapPop * 10000).toFixed(1)) : 0;
-      const utilization  = density < 2 ? 'at capacity' : density < 3 ? 'near capacity' : 'adequate';
-      return {
-        district: d.cd_name,
-        borough:  d.borough,
-        pantries,
-        density,
-        utilization,
-      };
-    })
-    .sort((a, b) => a.density - b.density); // worst coverage first
+  const counts = {};
+  PANTRIES.forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+  return Object.entries(counts).map(([name, count]) => ({ name, count }));
 })();
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────────
@@ -2290,19 +1312,14 @@ document.getElementById('map-timestamp').textContent =
 function renderDistrictList(filter = 'All', searchQuery = '') {
   const list = document.getElementById('district-list');
   list.innerHTML = '';
-  let filtered = DISTRICTS.filter(d => {
+  const filtered = DISTRICTS.filter(d => {
     const matchBorough = filter === 'All' || d.borough === filter;
     const matchSearch  = d.cd_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          d.borough.toLowerCase().includes(searchQuery.toLowerCase());
     return matchBorough && matchSearch;
   });
 
-  // Sort by active layer score descending
-  filtered = filtered.slice().sort((a, b) => getDistrictLayerScore(b) - getDistrictLayerScore(a));
-
   filtered.forEach((d, i) => {
-    const score          = getDistrictLayerScore(d);
-    const { tier, color } = getDistrictLayerTier(score);
     const item = document.createElement('div');
     item.className = 'district-item' + (selectedDistrict?.fips === d.fips ? ' active' : '');
     item.style.animationDelay = `${i * 0.03}s`;
@@ -2315,8 +1332,8 @@ function renderDistrictList(filter = 'All', searchQuery = '') {
         </div>
       </div>
       <div class="district-right">
-        <span class="district-score" style="color:${color}">${score}</span>
-        <span class="risk-badge" style="background:${color}22;color:${color};border:1px solid ${color}">${tier.toUpperCase()}</span>
+        <span class="district-score" style="color:${d.color}">${d.vulnerability_score}</span>
+        <span class="risk-badge badge-${d.risk_tier}">${d.risk_tier.toUpperCase()}</span>
       </div>
     `;
     item.onclick = () => selectDistrict(d);
@@ -2342,84 +1359,98 @@ document.getElementById('search-input').addEventListener('input', e => {
 function selectDistrict(d) {
   selectedDistrict = d;
   renderDistrictList(currentFilter, document.getElementById('search-input').value);
-  renderScorecard(d);
-  renderDistrictDetail(d);
-  document.getElementById('trend-area').style.display = 'block';
-  drawTrendChart(d);
-}
 
-function renderScorecard(d) {
-  const ls  = LAYER_SCORES[d.fips] || {};
-  const eq  = computeEquityScore(d, currentLens);
-
-  const dims = [
-    { id:'sc-food',     label:'FOOD',         score: Math.round(d.vulnerability_score), color:'#d32f2f' },
-    { id:'sc-housing',  label:'HOUSING',       score: ls.housing       || 50,            color:'#9c27b0' },
-    { id:'sc-cost',     label:'COST OF LIVING',score: ls.cost_of_living|| 50,            color:'#ef6c00' },
-    { id:'sc-health',   label:'HEALTH',        score: ls.health        || 50,            color:'#1976d2' },
-    { id:'sc-economic', label:'ECONOMIC',      score: ls.economic      || 50,            color:'#00897b' },
-  ];
-
-  document.getElementById('scorecard-dimensions').style.display = 'block';
-
-  dims.forEach(dim => {
-    const el = document.getElementById(dim.id);
-    el.innerHTML = `
-      <div class="scorecard-label">${dim.label}</div>
-      <div class="scorecard-track">
-        <div class="scorecard-fill" style="width:0%;background:${dim.color}" data-target="${dim.score}"></div>
-      </div>
-      <div class="scorecard-val" style="color:${dim.color}">${dim.score}</div>
-    `;
-  });
-
-  // Animate scorecard bars
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.scorecard-fill').forEach(bar => {
-      bar.style.width = bar.dataset.target + '%';
-    });
-  });
-}
-
-function renderDistrictDetail(d) {
   document.getElementById('detail-name').textContent = d.cd_name;
 
   const barsContainer = document.getElementById('detail-bars');
   barsContainer.innerHTML = '';
 
-  const indicators = getLayerIndicators(d);
-  const hasModeled = activeLayer !== 'food' && activeLayer !== 'equity' &&
-                     indicators.some(i => i.modeled);
-
-  if (hasModeled) {
-    const note = document.createElement('div');
-    note.style.cssText = 'font-size:10px;color:var(--text-dim);margin-bottom:7px;letter-spacing:0.5px;';
-    note.textContent = '~ modeled estimate · ACS-verified indicators unmarked';
-    barsContainer.appendChild(note);
-  }
-
-  indicators.forEach(ind => {
-    const pct        = Math.min((ind.val / ind.max) * 100, 100);
-    const displayVal = (ind.prefix || '') + ind.val + (ind.suffix || '');
+  INDICATOR_CONFIG.forEach(cfg => {
+    const val = d.indicators[cfg.key] || 0;
     const row = document.createElement('div');
     row.className = 'indicator-row';
     row.innerHTML = `
-      <div class="indicator-label" style="${ind.modeled ? 'color:var(--text-dim)' : ''}">${ind.modeled ? '~\u202f' : ''}${ind.label}</div>
+      <div class="indicator-label">${cfg.label}</div>
       <div class="indicator-track">
-        <div class="indicator-fill" style="width:0%;background:${ind.color};${ind.modeled ? 'opacity:0.6' : ''}"
-             data-target="${pct.toFixed(1)}"></div>
+        <div class="indicator-fill" style="width:0%;background:${cfg.color}"
+             data-target="${Math.min(val, 100)}"></div>
       </div>
-      <div class="indicator-pct" style="color:${ind.color};${ind.modeled ? 'opacity:0.7' : ''}">${displayVal}</div>
+      <div class="indicator-pct" style="color:${cfg.color}">${val.toFixed(1)}%</div>
     `;
     barsContainer.appendChild(row);
   });
 
+  // Animate bars
   requestAnimationFrame(() => {
     document.querySelectorAll('.indicator-fill').forEach(bar => {
       bar.style.width = bar.dataset.target + '%';
     });
   });
-}
+
+  // Show trend chart
+  document.getElementById('trend-area').style.display = 'block';
+  drawTrendChart(d);
+// Housing panel
+  const existingHousing = document.getElementById('housing-panel');
+  if (existingHousing) existingHousing.remove();
+
+  if (d.housing) {
+    const h = d.housing;
+    const stallColor = h.stall_rate_pct > 60 ? '#d32f2f' :
+                       h.stall_rate_pct > 30 ? '#f57c00' : '#388e3c';
+    const prodColor  = h.production_rate_pct < 2 ? '#d32f2f' :
+                       h.production_rate_pct < 5 ? '#f57c00' : '#388e3c';
+
+    const panel = document.createElement('div');
+    panel.id = 'housing-panel';
+    panel.innerHTML = `
+      <div style="margin-top:14px;border-top:1px solid #1e1e32;padding-top:12px">
+        <div style="font-size:9px;letter-spacing:2px;color:#44445a;
+                    margin-bottom:10px">HOUSING DEVELOPMENT</div>
+
+        <div style="display:flex;justify-content:space-between;
+                    font-size:11px;margin-bottom:7px">
+          <span style="color:#8888aa">Housing Stock (2020)</span>
+          <span style="color:#e8e4d9">
+            ${h.total_units_2020.toLocaleString()} units
+          </span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;
+                    font-size:11px;margin-bottom:7px">
+          <span style="color:#8888aa">Completed 2024</span>
+          <span style="color:#e8e4d9">
+            ${h.completions_2024.toLocaleString()} units
+          </span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;
+                    font-size:11px;margin-bottom:7px">
+          <span style="color:#8888aa">3-Year Production</span>
+          <span style="color:${prodColor}">
+            ${h.completions_3yr.toLocaleString()} (${h.production_rate_pct}%)
+          </span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;
+                    font-size:11px;margin-bottom:7px">
+          <span style="color:#8888aa">Pipeline (Permitted)</span>
+          <span style="color:#e8e4d9">
+            ${h.units_permitted.toLocaleString()} units
+          </span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;
+                    font-size:11px;margin-bottom:7px">
+          <span style="color:#8888aa">Stalled Projects</span>
+          <span style="color:${stallColor}">
+            ${h.stalled_units.toLocaleString()} (${h.stall_rate_pct}% stall rate)
+          </span>
+        </div>
+      </div>
+    `;
+    barsContainer.appendChild(panel);
+  }}
 
 // ── TREND CHART ───────────────────────────────────────────────────────────────
 function drawTrendChart(district) {
@@ -2481,9 +1512,7 @@ function drawTrendChart(district) {
 // ── ALERTS ────────────────────────────────────────────────────────────────────
 function renderAlerts() {
   const panel = document.getElementById('alerts-panel');
-  panel.innerHTML = '';
-  const alerts = ALERTS_BY_LAYER[activeLayer] || ALERTS_BY_LAYER.food;
-  alerts.forEach((a, i) => {
+  ALERTS.forEach((a, i) => {
     const card = document.createElement('div');
     card.className = `alert-card alert-${a.severity}`;
     card.style.animationDelay = `${i * 0.1}s`;
@@ -2549,36 +1578,61 @@ function getFallbackColor(fips) {
 }
 
 function loadCommunityDistrictGeoJSON() {
+  // Using NYC Open Data community districts GeoJSON
   fetch('/community_districts.geojson')
     .then(r => r.json())
-    .then(gjson => {
-      geojsonLayer = L.geoJSON(gjson, {
-        style: featureStyle,
-        onEachFeature: (feature, layer) => {
-          const fips     = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+    .then(geojson => {
+      L.geoJSON(geojson, {
+        style: feature => {
+          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
           const district = getDistrictData(fips);
-          if (!district) return;
+          return {
+            fillColor:   district ? district.color : getFallbackColor(fips),
+            fillOpacity: district ? 0.75 : 0.2,
+            color:       '#1e1e32',
+            weight:      1,
+            opacity:     0.8
+          };
+        },
+        onEachFeature: (feature, layer) => {
+          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+          const district = getDistrictData(fips);
 
-          layer.bindTooltip(buildTooltip(district), { sticky: true, direction: 'top' });
+          if (district) {
+            const tooltipContent = `
+              <strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
+              Score: <span style="color:#ff4d1c;font-weight:500">${district.vulnerability_score} ${district.risk_tier.toUpperCase()}</span><br>
+              SNAP Enrollment: ${district.indicators.snap_household_pct.toFixed(1)}%<br>
+              Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
+              Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}%<br>
+              Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%<br>
+              Non-citizen Pop: ${district.indicators.noncitizen_pct.toFixed(1)}%
+            `;
+            layer.bindTooltip(tooltipContent, { sticky: true, direction: 'top' });
 
-          layer.on({
-            mouseover: e => {
-              const accentColor = LAYER_CONFIG[activeLayer].accentColor;
-              e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: accentColor });
-            },
-            mouseout: e => {
-              e.target.setStyle(featureStyle(feature));
-            },
-            click: () => selectDistrict(district),
-          });
+            layer.on({
+              mouseover: e => {
+                e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: '#ff4d1c' });
+              },
+              mouseout: e => {
+                e.target.setStyle({ fillOpacity: 0.75, weight: 1, color: '#1e1e32' });
+              },
+              click: () => selectDistrict(district)
+            });
+          }
         }
       }).addTo(map);
     })
-    .catch(() => console.warn('GeoJSON failed to load'));
+    .catch(() => {
+      // Fallback if GeoJSON fails to load
+      console.warn('GeoJSON failed — add local file as fallback');
+    });
 }
 
 // ── AI CHAT ───────────────────────────────────────────────────────────────────
-// System prompt is built and injected server-side in main.py — not here.
+// Frontend system prompt is minimal — real analysis uses server-side tool-use
+const SYSTEM_PROMPT = null;
+
 let chatHistory = [];
 
 function addMessage(role, content, animate = true) {
@@ -2643,21 +1697,21 @@ async function sendMessage() {
       body: JSON.stringify({
         messages:       chatHistory,
         responseFormat: currentFormat,
-        activeLayer:    activeLayer,
-        agencyLens:     currentLens,
-        layerScores:    LAYER_SCORES,
         top10Districts: TOP10_DISTRICTS,
         pantryData:     PANTRY_COVERAGE,
         district:       selectedDistrict?.cd_name || null,
         districtData:   selectedDistrict ? {
-          fips:                selectedDistrict.fips,
           name:                selectedDistrict.cd_name,
           borough:             selectedDistrict.borough,
+          fips:                selectedDistrict.fips,
           rank:                districtRank,
           vulnerability_score: selectedDistrict.vulnerability_score,
           risk_tier:           selectedDistrict.risk_tier,
           indicators:          selectedDistrict.indicators,
         } : null,
+        activeLayer:    currentLayer,
+        agencyLens:     currentAgency,
+        layerScores:    LAYER_SCORES,
       })
     });
 
@@ -2672,57 +1726,14 @@ async function sendMessage() {
     removeTyping();
     // Fallback responses for demo
     const fallbacks = {
-      'snap work requirements': (
-        'ABAWD work requirements take effect March 2026 across NYC\'s 1.8M SNAP recipients.<br><br>' +
-        'Highest-exposure Critical districts (Bronx):<br>' +
-        '• Mott Haven — 51.5% SNAP enrollment, 15.1% non-citizen (already ineligible for federal SNAP)<br>' +
-        '• East Tremont — 44.9% SNAP, 15.4% non-citizen<br>' +
-        '• University Heights — 44.9% SNAP, 27.6% non-citizen — largest hidden unmet-need gap<br>' +
-        '• Morrisania — 46.7% SNAP, 15.4% non-citizen<br><br>' +
-        'Estimated ABAWD exposure: 18–22% of adult recipients in high-unemployment districts.<br><br>' +
-        '<span style="color:#ff4d1c">→</span> File CFC emergency allocation request now — requires 30%+ pantry utilization documentation<br>' +
-        '<span style="color:#ff4d1c">→</span> Deploy mobile food markets to University Heights (highest non-citizen gap)<br>' +
-        '<span style="color:#ff4d1c">→</span> Co-locate SNAP-Ed outreach at East Tremont and Morrisania pantry sites'
-      ),
-      'pantry gap': (
-        'Pantry coverage gaps by Critical district (pantries per 10k food-insecure residents):<br>' +
-        '• East Tremont — 2.1 / 10k · 44.9% SNAP · rent burden 60.6%<br>' +
-        '• Mott Haven — mapped coverage but at estimated capacity given 51.5% SNAP rate<br>' +
-        '• Brownsville — 2.4 / 10k · city\'s highest housing stress score (85)<br><br>' +
-        'Note: Jackson Heights (15.3% SNAP but 33.3% non-citizen, 58.7% rent burden) is likely severely undercounted — high need invisible to federal enrollment data.<br><br>' +
-        '<span style="color:#ff4d1c">→</span> Recommend 3 new CFC sites in East Tremont corridor<br>' +
-        '<span style="color:#ff4d1c">→</span> Deploy Saturday mobile markets to Brownsville (Brooklyn CD 16)<br>' +
-        '<span style="color:#ff4d1c">→</span> Add Jackson Heights to HPD + MOFP joint outreach target list'
-      ),
-      'policy memo': (
-        'PRIORITY MEMO — Bronx Food Security Crisis<br><br>' +
-        '7 of 8 Critical-tier districts are in the Bronx. Verified indicators from ACS data:<br>' +
-        '• Mott Haven: 51.5% SNAP, 62.0% child poverty, 61.9% rent burden<br>' +
-        '• East Tremont: 44.9% SNAP, 55.3% child poverty, 60.6% rent burden<br>' +
-        '• University Heights: 44.9% SNAP, 39.8% child poverty, 27.6% non-citizen<br><br>' +
-        'Recommended: $2.3M emergency CFC allocation targeting Mott Haven, Morrisania, and East Tremont.<br>' +
-        'Projected impact: pantry capacity gap reduced ~40% within 6 months if deployed via existing CFC partners.<br><br>' +
-        '<span style="color:#ff4d1c">→</span> TODAY: Submit CFC emergency allocation request with utilization documentation'
-      ),
-      'predict': (
-        'Federal SNAP cut impact projection — NYC:<br>' +
-        '• 1.8M current recipients citywide<br>' +
-        '• ~340K at risk of ineligibility under ABAWD work requirements (March 2026)<br>' +
-        '• Bronx Critical districts projected to absorb 55–65% of surge pantry demand<br>' +
-        '• Brownsville (Brooklyn CD 16): housing stress score 85, pantry coverage already thin at 2.4/10k<br>' +
-        '• Non-citizen households (e.g., 33.3% of Jackson Heights, 27.6% of University Heights) are already excluded from federal SNAP — they represent the invisible baseline need that will grow with any federal rollback<br><br>' +
-        '<span style="color:#ff4d1c">→</span> Pre-position emergency EFAP food reserves at 7 Bronx Critical district pantries before Q1 2026<br>' +
-        '<span style="color:#ff4d1c">→</span> Brief HRA commissioner on non-citizen gap in Queens as secondary priority'
-      ),
+      'snap work requirements': 'The 8 Critical districts face compounding exposure from work requirements. University Heights (73% SNAP, 28% non-citizen) and Morrisania (73.8% SNAP) are highest risk. New ABAWD requirements taking effect March 2026 will impact ~340,000 NYC recipients.<br><br><span style="color:#ff4d1c">→</span> Prioritize outreach in Mott Haven and Morrisania<br><span style="color:#ff4d1c">→</span> Emergency CFC allocation for Bronx districts<br><span style="color:#ff4d1c">→</span> Launch mobile pantry in University Heights',
+      'pantry gap': 'Worst pantry coverage gaps per food insecure resident:<br>1. East Tremont — 2.1 pantries per 10k<br>2. Brownsville — 2.4 per 10k<br>3. Hunts Point — 2.8 per 10k<br><br><span style="color:#ff4d1c">→</span> Recommend 3 new CFC sites in East Tremont<br><span style="color:#ff4d1c">→</span> Deploy mobile markets to Brownsville Saturdays',
+      'policy memo': 'PRIORITY MEMO: Bronx Food Security Crisis<br>7 of 8 Critical districts are in the Bronx. Average SNAP enrollment: 68.4%. Combined population at risk: ~340,000 residents.<br><br>Recommended: $2.3M emergency pantry investment targeting Mott Haven, Morrisania, and East Tremont.<br>Projected impact: Coverage gap reduced 40% within 6 months.',
+      'predict': 'Federal SNAP cut impact projection for NYC:<br>• 1.8M current recipients, ~340k at risk of ineligibility<br>• Bronx Critical districts will absorb 60% of new pantry demand<br>• Brownsville pantries projected to exceed capacity by March 2026<br><br><span style="color:#ff4d1c">→</span> Pre-position emergency food reserves now',
     };
 
     const key = Object.keys(fallbacks).find(k => text.toLowerCase().includes(k));
-    addMessage('ai', key ? fallbacks[key] : (
-      'Current dashboard status: 7 Critical-tier districts in the Bronx, 1 in Brooklyn (Brownsville). ' +
-      'Mott Haven leads at 89.1 vulnerability score — 51.5% SNAP enrollment, 62.0% child poverty, 61.9% rent burden. ' +
-      '$186B in federal SNAP cuts incoming; March 2026 ABAWD work requirements will hit high-unemployment Bronx districts hardest. ' +
-      'Select a district on the map or list for a specific analysis, or ask about a policy scenario.'
-    ));
+    addMessage('ai', key ? fallbacks[key] : 'Based on current vulnerability data, the Bronx districts require immediate attention. University Heights (91.2) leads all 59 community districts. Federal cuts will disproportionately impact the 8 Critical-tier neighborhoods. Recommend focusing resources on pantry capacity expansion and SNAP outreach in underserved Bronx communities.');
   }
 }
 
@@ -2798,15 +1809,9 @@ function exportPDF() {
     return;
   }
 
-  const ind       = d.indicators;
-  const ls        = LAYER_SCORES[d.fips] || {};
+  const ind = d.indicators;
   const tierColors = { Critical: '#d32f2f', High: '#f57c00', Moderate: '#f9a825', Lower: '#388e3c' };
   const tierColor  = tierColors[d.risk_tier] || '#555';
-
-  // Compute composite equity score
-  const equityScore = Math.round(
-    (d.vulnerability_score + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5
-  );
 
   // Grab last AI message text (strip HTML tags for clean print)
   const aiMsgs = document.querySelectorAll('.msg-ai .msg-bubble');
@@ -2814,54 +1819,33 @@ function exportPDF() {
     ? aiMsgs[aiMsgs.length - 1].innerText
     : 'No AI analysis generated yet. Use the AI assistant to generate a policy memo, then export.';
 
-  // Food vulnerability indicators
-  const foodIndicators = [
-    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%', suffix: '%' },
-    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%', suffix: '%' },
-    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%', suffix: '%' },
-    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%', suffix: '%' },
-    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%', suffix: '%' },
+  const indicators = [
+    { label: 'SNAP Enrollment',    val: ind.snap_household_pct,  weight: '35%' },
+    { label: 'Child Poverty',      val: ind.child_poverty_pct,   weight: '20%' },
+    { label: 'Rent Burden',        val: ind.rent_burden_pct,     weight: '20%' },
+    { label: 'Unemployment',       val: ind.unemployment_pct,    weight: '15%' },
+    { label: 'Non-citizen Pop.',   val: ind.noncitizen_pct,      weight: '10%' },
   ];
 
-  const indRows = foodIndicators.map(i => `
+  const indRows = indicators.map(i => `
     <div class="pr-indicator-row">
       <span>${i.label} <span style="color:#999;font-size:10px">(${i.weight})</span></span>
       <div class="pr-bar-bg">
         <div class="pr-bar-fill" style="width:${Math.min(i.val, 100)}%;background:${tierColor}"></div>
       </div>
-      <span class="pr-indicator-val">${i.val}${i.suffix}</span>
+      <span class="pr-indicator-val">${i.val}%</span>
     </div>`).join('');
-
-  // Multi-layer scorecard rows
-  const scorecardDims = [
-    { label: 'Food Vulnerability', score: Math.round(d.vulnerability_score), color: '#d32f2f' },
-    { label: 'Housing Stability',  score: ls.housing        || 50,           color: '#9c27b0' },
-    { label: 'Cost of Living',     score: ls.cost_of_living || 50,           color: '#ef6c00' },
-    { label: 'Health Burden',      score: ls.health         || 50,           color: '#1976d2' },
-    { label: 'Economic Stress',    score: ls.economic       || 50,           color: '#00897b' },
-  ];
-
-  const scorecardRows = scorecardDims.map(dim => `
-    <div class="pr-indicator-row">
-      <span style="min-width:130px">${dim.label}</span>
-      <div class="pr-bar-bg">
-        <div class="pr-bar-fill" style="width:${dim.score}%;background:${dim.color}"></div>
-      </div>
-      <span class="pr-indicator-val" style="color:${dim.color}">${dim.score}/100</span>
-    </div>`).join('');
-
-  const agencyLabel = AGENCY_LENSES[currentLens]?.label || "NYC Mayor's Office of Food Policy";
 
   document.getElementById('print-report').innerHTML = `
     <div class="pr-header">
-      <div class="pr-agency">${agencyLabel} · Community District Report</div>
+      <div class="pr-agency">The Grid NYC · Multi-Agency Neighborhood Intelligence Platform</div>
       <div class="pr-title">${d.cd_name}, ${d.borough}</div>
       <div class="pr-meta">Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · The Grid NYC — Neighborhood Intelligence Platform</div>
     </div>
 
     <div class="pr-score-block tier-${d.risk_tier}">
       <div>
-        <div class="pr-score-label">Food Vulnerability Score</div>
+        <div class="pr-score-label">Vulnerability Score</div>
         <div class="pr-score-num">${d.vulnerability_score}</div>
       </div>
       <div>
@@ -2869,24 +1853,16 @@ function exportPDF() {
         <div class="pr-tier-badge" style="background:${tierColor};color:#fff">${d.risk_tier.toUpperCase()}</div>
         <div class="pr-score-label" style="margin-top:8px">Community District ${d.fips}</div>
       </div>
-      <div>
-        <div class="pr-score-label">Equity Score (Composite)</div>
-        <div class="pr-score-num" style="color:#888">${equityScore}</div>
-        <div class="pr-score-label">5-dimension average</div>
-      </div>
     </div>
 
-    <div class="pr-section-title">Multi-Dimensional District Scorecard</div>
-    ${scorecardRows}
-
-    <div class="pr-section-title">Food Vulnerability Indicators</div>
+    <div class="pr-section-title">Vulnerability Indicators</div>
     ${indRows}
 
     <div class="pr-section-title">AI Policy Analysis</div>
     <div class="pr-memo">${lastAI}</div>
 
     <div class="pr-footer">
-      <span>${agencyLabel} · The Grid NYC</span>
+      <span>The Grid NYC · Neighborhood Intelligence Platform · Confidential Pre-decisional</span>
       <span>Confidential — Pre-decisional · ${new Date().toLocaleDateString()}</span>
     </div>
   `;
@@ -2897,9 +1873,6 @@ function exportPDF() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 renderDistrictList();
 renderAlerts();
-renderMapLegend();
-renderLayerChips();
-renderStatCards();
 initMap();
 initChat();
 selectDistrict(DISTRICTS[0]); // Pre-select #1

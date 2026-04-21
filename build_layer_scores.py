@@ -3,14 +3,22 @@
 Builds the final LAYER_SCORES object for index.html.
 
 Data sources by layer:
-  housing   — HPD Open Violations (NYC Open Data, real API pulls where available)
-               supplemented with NYC Housing and Vacancy Survey 2021 estimates
-  health    — DOHMH Community Health Profiles 2018 (life expectancy + asthma rates)
+  housing        — HPD Open Violations (NYC Open Data) + Housing Development
+                   Database 2020 NTA (completions 2010-2024, permit pipeline)
+  health         — DOHMH Community Health Profiles 2018 (life expectancy + asthma)
   cost_of_living — NYC HVS 2021 + StreetEasy 2023 median rent
-  economic  — ACS 5-yr 2021 median household income (via NYC DCP Community Profiles)
+  economic       — ACS 5-yr 2021 median household income (NYC DCP Community Profiles)
+
+Housing stability score blends:
+  60% HPD violation rate  (current conditions)
+  40% housing development stress (pipeline stall + low supply delivery)
 
 Run: python3 build_layer_scores.py
 """
+
+import csv
+import json
+import os
 
 # ── HPD VIOLATION RATES (violations per 1k households) ────────────────────────
 # Real API data from NYC Open Data (wvxf-dwi5 + tesw-yqqr join)
@@ -184,6 +192,102 @@ HOUSEHOLDS = {
     "501":36900,"502":34700,"503":42600,
 }
 
+# ── HOUSING DEVELOPMENT DATABASE (NTA → CD aggregation) ──────────────────────
+# Source: NYC DCP Housing Database by 2020 NTA (HPD permits + completions)
+# File:   data/Housing_Database_by_2020_NTA_20260421 copy.csv
+# Covers: completions 2010-2024, permit pipeline (filed/approved/permitted/
+#         withdrawn/inactive), census housing units 2020
+
+# Standard 59 community district FIPS codes — filter out parks/airports
+STANDARD_CD_FIPS = set(
+    [str(b) + str(cd).zfill(2)
+     for b, count in [(1,12),(2,12),(3,18),(4,14),(5,3)]
+     for cd in range(1, count+1)]
+)
+
+BOROUGH_PREFIX = {'BX': '2', 'BK': '3', 'MN': '1', 'QN': '4', 'SI': '5'}
+
+def _load_housing_dev_data():
+    """
+    Reads the Housing Development Database CSV and aggregates NTA rows to
+    community district FIPS codes. Returns a dict keyed by FIPS with:
+      completions_2020_2024  — total units completed in last 5 years
+      cenunits20             — 2020 census housing units (denominator)
+      filed                  — total permit applications filed
+      permitted              — permits that reached permitted stage
+      withdrawn              — permits withdrawn
+      inactive               — permits gone inactive
+    """
+    csv_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "data", "Housing_Database_by_2020_NTA_20260421 copy.csv"
+    )
+    if not os.path.exists(csv_path):
+        print(f"  [WARN] Housing dev CSV not found: {csv_path}")
+        return {}
+
+    csv.field_size_limit(10 ** 7)
+
+    def parse_int(val):
+        try:
+            return int(str(val).replace(",", "").strip() or 0)
+        except ValueError:
+            return 0
+
+    cd_totals = {}
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            nta = row["nta2020"]
+            if len(nta) < 4 or nta[:2] not in BOROUGH_PREFIX:
+                continue
+            fips = BOROUGH_PREFIX[nta[:2]] + nta[2:4]
+            if fips not in STANDARD_CD_FIPS:
+                continue
+
+            if fips not in cd_totals:
+                cd_totals[fips] = {
+                    "completions_2020_2024": 0,
+                    "cenunits20": 0,
+                    "filed": 0,
+                    "permitted": 0,
+                    "withdrawn": 0,
+                    "inactive": 0,
+                }
+            t = cd_totals[fips]
+            for yr in ("comp2020", "comp2021", "comp2022", "comp2023", "comp2024"):
+                t["completions_2020_2024"] += max(0, parse_int(row.get(yr, 0)))
+            t["cenunits20"]  += parse_int(row.get("cenunits20", 0))
+            t["filed"]       += parse_int(row.get("filed", 0))
+            t["permitted"]   += parse_int(row.get("permitted", 0))
+            t["withdrawn"]   += parse_int(row.get("withdrawn", 0))
+            t["inactive"]    += parse_int(row.get("inactive", 0))
+
+    return cd_totals
+
+HOUSING_DEV = _load_housing_dev_data()
+
+
+def _load_eviction_rates():
+    """
+    Loads eviction_rate_per_1k from live_data.json if available.
+    Returns {fips: rate} or empty dict if not yet fetched.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "live_data.json")
+    if not os.path.exists(path):
+        return {}
+    try:
+        data = json.loads(open(path).read())
+        return {
+            fips: v.get("eviction_rate_per_1k", 0)
+            for fips, v in data.get("by_district", {}).items()
+        }
+    except Exception:
+        return {}
+
+
+EVICTION_RATES = _load_eviction_rates()
+
+
 def normalize(value, min_val, max_val, invert=False):
     """Normalize value to 0-100. invert=True means high value = low stress."""
     if max_val == min_val:
@@ -209,17 +313,49 @@ def build_layer_scores():
     rent_min, rent_max = min(rent_vals), max(rent_vals)
     inc_min, inc_max   = min(inc_vals), max(inc_vals)
 
+    # Pre-compute housing development stress ranges (after loading CSV)
+    # stall_rate = (withdrawn+inactive) / (permitted+withdrawn+inactive) * 100
+    #   = fraction of resolved pipeline that failed rather than got built
+    # supply_rate = completions_5yr per 1k census units
+    dev_stall_rates  = []
+    dev_supply_rates = []
+    for fips in all_fips:
+        d = HOUSING_DEV.get(fips, {})
+        permitted = max(0, d.get("permitted", 0))
+        withdrawn = max(0, d.get("withdrawn", 0))
+        inactive  = max(0, d.get("inactive", 0))
+        resolved  = permitted + withdrawn + inactive
+        stall     = (withdrawn + inactive) / max(1, resolved) * 100
+        cenunits  = d.get("cenunits20", 0) or 1
+        supply    = max(0, d.get("completions_2020_2024", 0)) / cenunits * 1000
+        dev_stall_rates.append(stall)
+        dev_supply_rates.append(supply)
+
+    stall_min, stall_max   = min(dev_stall_rates), max(dev_stall_rates)
+    supply_min, supply_max = min(dev_supply_rates), max(dev_supply_rates)
+
+    # Eviction stress ranges (0 if no live data)
+    ev_vals = [EVICTION_RATES.get(f, 0) for f in all_fips]
+    has_evictions = any(v > 0 for v in ev_vals)
+    ev_min, ev_max = (min(ev_vals), max(ev_vals)) if has_evictions else (0, 1)
+
     scores = {}
     raw_data = {}
 
-    for fips in all_fips:
+    for i, fips in enumerate(all_fips):
         hpd  = HPD_VIOLATIONS_PER_1K[fips]
         le   = LIFE_EXPECTANCY[fips]
         ast  = ASTHMA_PER_10K[fips]
         rent = MEDIAN_RENT[fips]
         inc  = MEDIAN_INCOME_K[fips]
 
-        housing_score = normalize(hpd, hpd_min, hpd_max)
+        # Housing stability: violation conditions (60%) + development stress (40%)
+        violation_stress  = normalize(hpd, hpd_min, hpd_max)
+        dev_stall_stress  = normalize(dev_stall_rates[i], stall_min, stall_max)
+        # invert: more supply delivered per 1k units = less stress
+        dev_supply_stress = normalize(dev_supply_rates[i], supply_min, supply_max, invert=True)
+        dev_stress        = round(dev_stall_stress * 0.5 + dev_supply_stress * 0.5)
+        housing_score     = round(violation_stress * 0.6 + dev_stress * 0.4)
 
         # Health burden: low life expectancy + high asthma = high burden
         le_stress  = normalize(le, le_min, le_max, invert=True)
@@ -229,8 +365,23 @@ def build_layer_scores():
         # Cost of living: high rent = high stress
         col_score = normalize(rent, rent_min, rent_max)
 
-        # Economic stress: low income = high stress
-        econ_score = normalize(inc, inc_min, inc_max, invert=True)
+        # Economic stress: low income = high stress; blend with eviction pressure if available
+        income_stress = normalize(inc, inc_min, inc_max, invert=True)
+        if has_evictions:
+            ev_rate     = EVICTION_RATES.get(fips, 0)
+            ev_stress   = normalize(ev_rate, ev_min, ev_max)
+            econ_score  = round(income_stress * 0.80 + ev_stress * 0.20)
+        else:
+            econ_score = income_stress
+
+        d         = HOUSING_DEV.get(fips, {})
+        cenunits  = d.get("cenunits20", 1) or 1
+        comps_5yr = max(0, d.get("completions_2020_2024", 0))
+        permitted = max(0, d.get("permitted", 0))
+        withdrawn = max(0, d.get("withdrawn", 0))
+        inactive  = max(0, d.get("inactive", 0))
+        resolved  = permitted + withdrawn + inactive
+        stall_pct = round((withdrawn + inactive) / max(1, resolved) * 100, 1)
 
         scores[fips] = {
             "housing": housing_score,
@@ -239,11 +390,19 @@ def build_layer_scores():
             "economic": econ_score,
         }
         raw_data[fips] = {
-            "hpd_violations_per_1k": hpd,
-            "life_expectancy": le,
-            "asthma_per_10k": ast,
-            "median_rent": rent,
-            "median_income_k": inc,
+            "hpd_violations_per_1k":     hpd,
+            "life_expectancy":           le,
+            "asthma_per_10k":            ast,
+            "median_rent":               rent,
+            "median_income_k":           inc,
+            "eviction_rate_per_1k":      EVICTION_RATES.get(fips, 0),
+            "housing_completions_5yr":   comps_5yr,
+            "housing_completions_per1k": round(comps_5yr / cenunits * 1000, 1),
+            "pipeline_filed":            d.get("filed", 0),
+            "pipeline_permitted":        permitted,
+            "pipeline_withdrawn":        withdrawn,
+            "pipeline_inactive":         inactive,
+            "pipeline_stall_rate":       stall_pct,
         }
 
     return scores, raw_data
@@ -259,18 +418,27 @@ def format_js_layer_scores(scores, raw_data):
             f'health:{s["health"]}, economic:{s["economic"]}, '
             f'_raw:{{ hpd_per_1k:{r["hpd_violations_per_1k"]}, '
             f'life_exp:{r["life_expectancy"]}, asthma:{r["asthma_per_10k"]}, '
-            f'rent:{r["median_rent"]}, income_k:{r["median_income_k"]} }} }},'
+            f'rent:{r["median_rent"]}, income_k:{r["median_income_k"]}, '
+            f'eviction_rate_per_1k:{r["eviction_rate_per_1k"]}, '
+            f'completions_5yr:{r["housing_completions_5yr"]}, '
+            f'completions_per1k:{r["housing_completions_per1k"]}, '
+            f'pipeline_filed:{r["pipeline_filed"]}, '
+            f'pipeline_permitted:{r["pipeline_permitted"]}, '
+            f'pipeline_withdrawn:{r["pipeline_withdrawn"]}, '
+            f'pipeline_inactive:{r["pipeline_inactive"]}, '
+            f'pipeline_stall_rate:{r["pipeline_stall_rate"]} }} }},'
         )
     lines.append("};")
     return "\n".join(lines)
 
 def main():
     print("Building normalized layer scores from all sources...")
+    print(f"  Housing dev data loaded for {len(HOUSING_DEV)} CDs")
     scores, raw_data = build_layer_scores()
 
     js_output = format_js_layer_scores(scores, raw_data)
 
-    outfile = "/Users/chericeheron/Desktop/MAYOR-OFFICE-OF-FOOD-POLICY/layer_scores_output.js"
+    outfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "layer_scores_output.js")
     with open(outfile, "w") as f:
         f.write(js_output)
     print(f"Written to {outfile}")
@@ -280,10 +448,11 @@ def main():
         s = scores[fips]
         r = raw_data[fips]
         print(f"\n  {name} ({fips}):")
-        print(f"    housing={s['housing']} (HPD {r['hpd_violations_per_1k']}/1k HH)")
+        print(f"    housing={s['housing']} (HPD {r['hpd_violations_per_1k']}/1k HH, stall {r['pipeline_stall_rate']}%, {r['housing_completions_per1k']}/1k units built)")
         print(f"    health={s['health']} (LE {r['life_expectancy']} yrs, asthma {r['asthma_per_10k']}/10k)")
         print(f"    cost_of_living={s['cost_of_living']} (rent ${r['median_rent']}/mo)")
         print(f"    economic={s['economic']} (income ${r['median_income_k']}k)")
+        print(f"    pipeline: {r['pipeline_filed']} filed → {r['pipeline_permitted']} permitted, {r['pipeline_withdrawn']} withdrawn, {r['pipeline_inactive']} inactive")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "the-grid-nyc": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/Users/chericeheron/Desktop/The Grid/Food-Vulnerability-Tracker/mcp_server.py"]
+    }
+  }
+}

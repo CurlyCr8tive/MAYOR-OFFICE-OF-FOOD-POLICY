@@ -308,7 +308,7 @@ html, body {
 /* ── LAYER CONTROLS ───────────────────────────────────────── */
 .layer-controls {
   position: absolute;
-  bottom: 20px;
+  top: 55px;
   left: 10px;
   z-index: 500;
   display: flex;
@@ -1422,6 +1422,152 @@ function setLayer(layer, btn) {
   }
   // re-render district list sorted by active layer
   renderDistrictList();
+  // update sidebar stats, alerts, trend chart
+  updateStatCards();
+  generateAlerts();
+  if (selectedDistrict) drawTrendChart(selectedDistrict);
+  // refresh detail score cards highlight
+  if (selectedDistrict) selectDistrict(selectedDistrict);
+}
+
+// ── STAT CARDS ────────────────────────────────────────────────────────────────
+function updateStatCards() {
+  const sorted = DISTRICTS.slice().sort((a, b) => getLayerScore(b.fips) - getLayerScore(a.fips));
+  const criticalCount = sorted.filter(d => getLayerScore(d.fips) >= 70).length;
+  const highCount     = sorted.filter(d => getLayerScore(d.fips) >= 50).length;
+  const scores        = DISTRICTS.map(d => getLayerScore(d.fips));
+  const avgScore      = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+  const topDistrict   = sorted[0];
+
+  const configs = {
+    food: [
+      { id:'stat-1', val:'1.8M',          label:'SNAP RECIPIENTS' },
+      { id:'stat-2', val:criticalCount,   label:'CRITICAL DISTRICTS' },
+      { id:'stat-3', val:'700+',          label:'FOOD PANTRIES' },
+      { id:'stat-4', val:'$186B',         label:'CUTS INCOMING' },
+    ],
+    housing: [
+      { id:'stat-1', val:criticalCount,   label:'HIGH HPD DISTRICTS' },
+      { id:'stat-2', val:highCount,       label:'HOUSING STRESSED' },
+      { id:'stat-3', val:'177.5k',        label:'NYCHA UNITS' },
+      { id:'stat-4', val:'$40B',          label:'NYCHA REPAIR BACKLOG' },
+    ],
+    health: [
+      { id:'stat-1', val:'10yr',          label:'LIFE EXPECT GAP' },
+      { id:'stat-2', val:criticalCount,   label:'HIGH BURDEN CDs' },
+      { id:'stat-3', val:'75.8',          label:'LOWEST LIFE EXP' },
+      { id:'stat-4', val:'86.0',          label:'HIGHEST LIFE EXP' },
+    ],
+    cost_of_living: [
+      { id:'stat-1', val:criticalCount,   label:'HIGH RENT BURDEN' },
+      { id:'stat-2', val:'$4.3k',         label:'MAX MEDIAN RENT/MO' },
+      { id:'stat-3', val:'$1.1k',         label:'MIN MEDIAN RENT/MO' },
+      { id:'stat-4', val:avgScore,        label:'AVG COST SCORE' },
+    ],
+    economic: [
+      { id:'stat-1', val:criticalCount,   label:'LOW INCOME CDs' },
+      { id:'stat-2', val:'$22k',          label:'LOWEST MEDIAN INC' },
+      { id:'stat-3', val:'$149k',         label:'HIGHEST MEDIAN INC' },
+      { id:'stat-4', val:avgScore,        label:'AVG ECON SCORE' },
+    ],
+    equity: [
+      { id:'stat-1', val:criticalCount,   label:'CRITICAL EQUITY' },
+      { id:'stat-2', val:highCount,       label:'HIGH EQUITY NEED' },
+      { id:'stat-3', val:avgScore,        label:'AVG EQUITY SCORE' },
+      { id:'stat-4', val:topDistrict ? topDistrict.cd_name.split('/')[0].split(' ').slice(0,2).join(' ') : '—', label:'TOP NEED DISTRICT' },
+    ],
+  };
+
+  const cards = document.querySelectorAll('.stat-card');
+  const cfg   = configs[currentLayer] || configs.food;
+  cfg.forEach((c, i) => {
+    if (cards[i]) {
+      cards[i].querySelector('.stat-val').textContent   = c.val;
+      cards[i].querySelector('.stat-label').textContent = c.label;
+    }
+  });
+  // keep stat-critical id working for legacy references
+  const critEl = document.getElementById('stat-critical');
+  if (critEl) critEl.textContent = criticalCount;
+}
+
+// ── DYNAMIC ALERTS ────────────────────────────────────────────────────────────
+const ALERT_TEMPLATES = {
+  food: (d, score) => ({
+    severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+    district: `${d.cd_name}, ${d.borough}`,
+    body: `Food vulnerability score ${score}/100. SNAP rate: ${d.indicators.snap_household_pct.toFixed(1)}%, child poverty: ${d.indicators.child_poverty_pct.toFixed(1)}%.`,
+    action: score >= 70 ? '→ Emergency pantry capacity expansion' : '→ Deploy mobile food markets',
+  }),
+  housing: (d, score) => {
+    const raw = (LAYER_SCORES[d.fips] || {})._raw || {};
+    return {
+      severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+      district: `${d.cd_name}, ${d.borough}`,
+      body: `Housing score ${score}/100. HPD violations: ${raw.hpd_per_1k || '—'}/1k HH. Pipeline stall: ${raw.pipeline_stall_rate || '—'}%.`,
+      action: score >= 70 ? '→ Prioritize HPD emergency repair orders' : '→ Review pipeline permit stalls with HPD',
+    };
+  },
+  health: (d, score) => {
+    const raw = (LAYER_SCORES[d.fips] || {})._raw || {};
+    return {
+      severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+      district: `${d.cd_name}, ${d.borough}`,
+      body: `Health burden score ${score}/100. Life expectancy: ${raw.life_exp || '—'} yrs. Asthma: ${raw.asthma || '—'}/10k.`,
+      action: score >= 70 ? '→ Coordinate DOHMH Health Home enrollment' : '→ Expand Health Bucks and WIC outreach',
+    };
+  },
+  cost_of_living: (d, score) => {
+    const raw = (LAYER_SCORES[d.fips] || {})._raw || {};
+    return {
+      severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+      district: `${d.cd_name}, ${d.borough}`,
+      body: `Cost of living score ${score}/100. Median rent: $${raw.rent || '—'}/mo. Rent burden: ${d.indicators.rent_burden_pct.toFixed(1)}% of households.`,
+      action: score >= 70 ? '→ Flag for SCRIE/DRIE rent freeze outreach' : '→ Refer to HRA One-Shot Deal program',
+    };
+  },
+  economic: (d, score) => {
+    const raw = (LAYER_SCORES[d.fips] || {})._raw || {};
+    return {
+      severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+      district: `${d.cd_name}, ${d.borough}`,
+      body: `Economic stress score ${score}/100. Median income: $${raw.income_k || '—'}k. Unemployment: ${d.indicators.unemployment_pct.toFixed(1)}%.`,
+      action: score >= 70 ? '→ Priority SBS workforce program enrollment' : '→ Expand SNAP-Ed financial literacy outreach',
+    };
+  },
+  equity: (d, score) => ({
+    severity: score >= 70 ? 'Critical' : score >= 50 ? 'High' : 'Medium',
+    district: `${d.cd_name}, ${d.borough}`,
+    body: `Composite equity score ${score}/100 — compounding deprivation across multiple layers.`,
+    action: score >= 70 ? '→ Multi-agency coordinated response required' : '→ Target for next capital allocation cycle',
+  }),
+};
+
+function generateAlerts() {
+  const panel = document.getElementById('alerts-panel');
+  panel.innerHTML = '';
+
+  const sorted   = DISTRICTS.slice().sort((a, b) => getLayerScore(b.fips) - getLayerScore(a.fips));
+  const top3     = sorted.slice(0, 3);
+  const template = ALERT_TEMPLATES[currentLayer] || ALERT_TEMPLATES.food;
+
+  top3.forEach((d, i) => {
+    const score = getLayerScore(d.fips);
+    const a     = template(d, score);
+    const card  = document.createElement('div');
+    card.className = `alert-card alert-${a.severity}`;
+    card.style.animationDelay = `${i * 0.1}s`;
+    const dot = a.severity === 'Critical' ? '🔴' : a.severity === 'High' ? '🟠' : '🟡';
+    card.innerHTML = `
+      <div class="alert-header">
+        <span class="alert-severity" style="color:${a.severity==='Critical'?'#d32f2f':a.severity==='High'?'#f57c00':'#fbc02d'}">${dot} ${a.severity.toUpperCase()}</span>
+        <span class="alert-district">— ${a.district}</span>
+      </div>
+      <div class="alert-body">${a.body}</div>
+      <div class="alert-action">${a.action}</div>
+    `;
+    panel.appendChild(card);
+  });
 }
 
 function setAgency(agency, btn) {
@@ -1628,7 +1774,20 @@ function selectDistrict(d) {
 }
 
 // ── TREND CHART ───────────────────────────────────────────────────────────────
+const TREND_LABELS = {
+  food:          'FOOD VULNERABILITY TREND 2019–2024',
+  housing:       'HOUSING STRESS TREND 2019–2024',
+  health:        'HEALTH BURDEN TREND 2019–2024',
+  cost_of_living:'COST OF LIVING TREND 2019–2024',
+  economic:      'ECONOMIC STRESS TREND 2019–2024',
+  equity:        'EQUITY SCORE TREND 2019–2024',
+};
+
 function drawTrendChart(district) {
+  // Update chart label
+  const trendLabel = document.querySelector('.trend-label');
+  if (trendLabel) trendLabel.textContent = TREND_LABELS[currentLayer] || TREND_LABELS.food;
+
   const canvas = document.getElementById('trend-canvas');
   canvas.width = canvas.offsetWidth * window.devicePixelRatio;
   canvas.height = 48 * window.devicePixelRatio;
@@ -1636,7 +1795,9 @@ function drawTrendChart(district) {
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
   const W = canvas.offsetWidth, H = 48;
-  const data = TREND_DATA.baseline.map(v => v + (district.vulnerability_score - 73) * 0.3);
+  // Use active layer score for this district as the anchor
+  const anchorScore = getLayerScore(district.fips);
+  const data = TREND_DATA.baseline.map(v => v + (anchorScore - 73) * 0.3);
   const min = Math.min(...data) - 5;
   const max = Math.max(...data) + 5;
 
@@ -2050,7 +2211,8 @@ function exportPDF() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 renderDistrictList();
-renderAlerts();
+updateStatCards();
+generateAlerts();
 initMap();
 initChat();
 selectDistrict(DISTRICTS[0]); // Pre-select #1

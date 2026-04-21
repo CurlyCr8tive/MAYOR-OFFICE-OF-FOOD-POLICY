@@ -752,32 +752,25 @@ html, body {
   30% { transform: translateY(-5px); opacity: 1; }
 }
 
-/* Glossary tooltip */
-.has-tip { position: relative; cursor: help; }
-.has-tip::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1a1a2e;
-  border: 1px solid var(--accent-dim);
+/* Glossary tooltip — JS-positioned, never clipped */
+.has-tip { cursor: help; }
+#grid-tooltip {
+  position: fixed;
+  background: #0d0d1a;
+  border: 1px solid var(--accent);
   color: var(--text-primary);
   font-size: 10px;
-  line-height: 1.5;
-  padding: 6px 10px;
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  padding: 8px 12px;
   border-radius: 4px;
   white-space: pre-line;
-  max-width: 240px;
-  width: max-content;
-  text-align: left;
-  opacity: 0;
+  max-width: 260px;
+  z-index: 99999;
   pointer-events: none;
-  transition: opacity 0.15s;
-  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
   letter-spacing: 0;
 }
-.has-tip:hover::after { opacity: 1; }
 
 /* Score explanation pill */
 .score-explain {
@@ -1139,12 +1132,12 @@ html, body {
         </div>
 
         <div class="map-legend">
-          <div class="legend-title">RISK TIER</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f"></div>Critical (70–100)</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div>High (50–69)</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#fbc02d"></div>Moderate (30–49)</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#388e3c"></div>Lower (0–29)</div>
-          <div class="legend-item"><div class="legend-dot-marker"></div>Food Pantry</div>
+          <div class="legend-title has-tip" data-tip="Score = 0 to 100. Higher = more need.&#10;Based on the active data layer (Food, Housing,&#10;Health, Cost of Living, Economic, or Equity).&#10;Click a layer button on the map to change&#10;what the colors represent.">RISK TIER ⓘ</div>
+          <div class="legend-item has-tip" data-tip="Score 70–100&#10;Immediate intervention needed.&#10;Concentrated resources + emergency allocation.&#10;Currently: 8 districts (all South Bronx)."><div class="legend-swatch" style="background:#d32f2f"></div>Critical (70–100)</div>
+          <div class="legend-item has-tip" data-tip="Score 50–69&#10;Elevated stress across indicators.&#10;Priority for targeted program investment.&#10;~12 districts currently in this tier."><div class="legend-swatch" style="background:#f57c00"></div>High (50–69)</div>
+          <div class="legend-item has-tip" data-tip="Score 30–49&#10;Moderate stress. Monitor trends closely.&#10;May escalate under federal cuts.&#10;Use Equity layer to spot compounding risks."><div class="legend-swatch" style="background:#fbc02d"></div>Moderate (30–49)</div>
+          <div class="legend-item has-tip" data-tip="Score 0–29&#10;Lower relative stress on this layer.&#10;May still have pockets of high need —&#10;click the district to investigate all 5 layers."><div class="legend-swatch" style="background:#388e3c"></div>Lower (0–29)</div>
+          <div class="legend-item has-tip" data-tip="Community Fridge Collaborative (CFC) sites.&#10;~50 citywide. No ID or eligibility required.&#10;Only food program that reaches noncitizen&#10;households ineligible for federal SNAP."><div class="legend-dot-marker"></div>Food Pantry</div>
         </div>
       </div>
 
@@ -2606,6 +2599,38 @@ function sendChip(text) {
   document.getElementById('chat-input').value = text;
   sendMessage();
 }
+
+// ── VIEWPORT-AWARE TOOLTIPS ────────────────────────────────────────────────────
+function showTip(el) {
+  hideTip();
+  const tip = el.getAttribute('data-tip');
+  if (!tip) return;
+  const rect = el.getBoundingClientRect();
+  const div  = document.createElement('div');
+  div.id = 'grid-tooltip';
+  div.textContent = tip;
+  document.body.appendChild(div);
+  const tw = div.offsetWidth, th = div.offsetHeight;
+  let left = rect.left + rect.width / 2 - tw / 2;
+  let top  = rect.top - th - 10;
+  if (top < 8)  top  = rect.bottom + 10;              // flip below
+  if (left < 8) left = 8;                              // clamp left
+  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8; // clamp right
+  div.style.left = left + 'px';
+  div.style.top  = top  + 'px';
+}
+function hideTip() {
+  const t = document.getElementById('grid-tooltip');
+  if (t) t.remove();
+}
+// Wire up tooltip events after DOM is ready
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.has-tip');
+  if (el) showTip(el);
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.has-tip')) hideTip();
+});
 
 // ── SESSION MEMORY (localStorage) ─────────────────────────────────────────────
 const HISTORY_KEY = 'nyc_food_chat_history';

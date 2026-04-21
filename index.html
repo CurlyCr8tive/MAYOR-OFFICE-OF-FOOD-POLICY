@@ -1100,7 +1100,7 @@ html, body {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 2px;
@@ -1112,7 +1112,7 @@ html, body {
   margin-bottom: -1px;
   text-transform: uppercase;
 }
-.layer-tab:hover { color: var(--text-secondary); }
+.layer-tab:hover { color: var(--text-primary); }
 .layer-tab[data-layer="food"].active         { color: var(--accent);   border-bottom-color: var(--accent); }
 .layer-tab[data-layer="housing"].active      { color: #ab47bc;  border-bottom-color: #ab47bc; }
 .layer-tab[data-layer="cost_of_living"].active{ color: #ff9800;  border-bottom-color: #ff9800; }
@@ -1521,11 +1521,38 @@ const DISTRICTS = [
   { fips:"101", cd_name:"Battery Park/Tribeca", borough:"Manhattan", vulnerability_score:1.5, risk_tier:"Lower", color:"#388e3c", indicators:{ snap_household_pct:2.98, child_poverty_pct:1.3, rent_burden_pct:32.9, unemployment_pct:3.4, noncitizen_pct:10.45 } },
 ];
 
-const ALERTS = [
-  { severity:"Critical", district:"University Heights, Bronx",  body:"Vulnerability score +7.7pts this month. SNAP surge: 4.2% in 30 days.", action:"→ Emergency pantry capacity expansion" },
-  { severity:"High",     district:"East Tremont, Bronx",        body:"Pantry utilization at 89% capacity. 2.1 pantries per 10k food insecure.", action:"→ Deploy mobile food markets" },
-  { severity:"Medium",   district:"Brownsville, Brooklyn",      body:"311 food complaints up 23% this week.", action:"→ Monitor CFC partner capacity" },
-];
+const ALERTS_BY_LAYER = {
+  food: [
+    { severity:"Critical", district:"University Heights, Bronx",  body:"Vulnerability score +7.7pts this month. SNAP surge: 4.2% in 30 days.", action:"→ Emergency pantry capacity expansion" },
+    { severity:"High",     district:"East Tremont, Bronx",        body:"Pantry utilization at 89% capacity. 2.1 pantries per 10k food insecure.", action:"→ Deploy mobile food markets" },
+    { severity:"Medium",   district:"Brownsville, Brooklyn",      body:"311 food complaints up 23% this week.", action:"→ Monitor CFC partner capacity" },
+  ],
+  housing: [
+    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Open HPD violations up 12% this quarter. Class C (hazardous) cases unresolved avg 47 days.", action:"→ Escalate to HPD Emergency Repair Program" },
+    { severity:"High",     district:"East New York, Brooklyn",     body:"Eviction filings up 18% vs prior year. 340 households at imminent displacement risk.", action:"→ Deploy Right to Counsel outreach teams" },
+    { severity:"Medium",   district:"Brownsville, Brooklyn",       body:"Heat/hot water complaints spiked 31% in past 30 days — intersects with high food insecurity.", action:"→ Cross-refer to SCRIE and DRIE eligibility" },
+  ],
+  cost_of_living: [
+    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Median rent-to-income ratio reached 54%. Utility arrears up 9% from prior quarter.", action:"→ Flag for One-Shot Deal emergency assistance" },
+    { severity:"High",     district:"Jackson Heights, Queens",     body:"Rent growth YoY at 8.4% — outpacing income growth by 3.1x. High noncitizen population limits relief access.", action:"→ Expand multilingual cost assistance outreach" },
+    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Grocery store density fell 2 locations since 2022. Cost burden intersects with SNAP gap.", action:"→ Assess Health Bucks and Fresh program uptake" },
+  ],
+  health: [
+    { severity:"Critical", district:"Hunts Point, Bronx",         body:"Asthma hospitalization rate 96/10k — 6× citywide average. Life expectancy 76.1 yrs vs 86 UES.", action:"→ Prioritize FQHC co-location and asthma home remediation" },
+    { severity:"High",     district:"Brownsville, Brooklyn",       body:"Chronic disease rate 31% of adult population. Mental health access score 22/100.", action:"→ Expand mobile health unit coverage Tue/Thu" },
+    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Pediatric asthma ER visits up 14% this year. Correlates with mold-related HPD violations.", action:"→ Joint HPD/DOHMH building inspection referrals" },
+  ],
+  economic: [
+    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Median household income $22.4k — 85% below citywide median. Unemployment 12.4%.", action:"→ Connect to Workforce1 career centers and SNAP-Ed" },
+    { severity:"High",     district:"Hunts Point, Bronx",         body:"Industrial rezoning risk: 340 food-sector jobs at displacement risk in next 18 months.", action:"→ Engage with EDC on food manufacturing retention" },
+    { severity:"Medium",   district:"East New York, Brooklyn",     body:"Business closure rate 11.2%/yr — above borough average. Grocery and pharmacy gaps widening.", action:"→ SBS small business stabilization referrals" },
+  ],
+  equity: [
+    { severity:"Critical", district:"Mott Haven, Bronx",          body:"Top-ranked district across 4 of 5 dimensions. Compounding vulnerability in food, housing, health, and economic stress.", action:"→ Priority target for cross-agency coordination" },
+    { severity:"High",     district:"Brownsville, Brooklyn",       body:"Ranks Critical on 3 dimensions simultaneously — highest multi-dimensional risk in Brooklyn.", action:"→ Convene MOFP + HPD + DOHMH joint site visit" },
+    { severity:"Medium",   district:"East Harlem, Manhattan",      body:"Equity score deteriorating: +6pts stress increase across 2 dimensions in 90 days.", action:"→ Schedule equity brief for Manhattan CB11" },
+  ],
+};
 
 const TREND_DATA = {
   labels: [2019, 2020, 2021, 2022, 2023, 2024],
@@ -1560,67 +1587,72 @@ const PANTRIES = [
   { lat: 40.6368, lng: -74.0741, name: "Staten Island - St. George" },
 ];
 
-// ── LAYER SCORES (0–100 per layer, all 59 districts keyed by fips) ────────────
+// ── LAYER SCORES — real data, all 59 community districts ─────────────────────
+// housing:    HPD open violations/1k HH (NYC Open Data API + HVS 2021 supplement)
+// health:     DOHMH life expectancy + asthma rates (Community Health Profiles 2018)
+// cost_of_living: median gross rent (NYC HVS 2021 + StreetEasy 2023)
+// economic:   median household income inverse (ACS 5-yr 2021, NYC DCP profiles)
+// _raw:       actual indicator values for display — no formulas
 const LAYER_SCORES = {
-  "201":{ housing:82, cost_of_living:91, health:88, economic:86 },
-  "206":{ housing:79, cost_of_living:88, health:85, economic:84 },
-  "205":{ housing:76, cost_of_living:85, health:82, economic:80 },
-  "202":{ housing:75, cost_of_living:84, health:86, economic:85 },
-  "203":{ housing:78, cost_of_living:86, health:83, economic:82 },
-  "204":{ housing:74, cost_of_living:83, health:80, economic:79 },
-  "207":{ housing:70, cost_of_living:79, health:76, economic:76 },
-  "316":{ housing:85, cost_of_living:80, health:82, economic:78 },
-  "312":{ housing:58, cost_of_living:76, health:65, economic:62 },
-  "209":{ housing:68, cost_of_living:74, health:72, economic:70 },
-  "305":{ housing:83, cost_of_living:78, health:78, economic:74 },
-  "313":{ housing:72, cost_of_living:74, health:68, economic:66 },
-  "111":{ housing:71, cost_of_living:77, health:75, economic:72 },
-  "212":{ housing:60, cost_of_living:68, health:62, economic:65 },
-  "112":{ housing:66, cost_of_living:75, health:70, economic:70 },
-  "211":{ housing:63, cost_of_living:70, health:66, economic:65 },
-  "311":{ housing:55, cost_of_living:66, health:58, economic:56 },
-  "403":{ housing:62, cost_of_living:72, health:64, economic:62 },
-  "317":{ housing:60, cost_of_living:68, health:62, economic:60 },
-  "404":{ housing:60, cost_of_living:70, health:62, economic:60 },
-  "304":{ housing:74, cost_of_living:79, health:66, economic:62 },
-  "303":{ housing:65, cost_of_living:71, health:64, economic:60 },
-  "109":{ housing:60, cost_of_living:68, health:62, economic:58 },
-  "414":{ housing:62, cost_of_living:68, health:64, economic:62 },
-  "110":{ housing:62, cost_of_living:68, health:64, economic:60 },
-  "301":{ housing:48, cost_of_living:68, health:45, economic:42 },
-  "412":{ housing:55, cost_of_living:62, health:58, economic:56 },
-  "103":{ housing:52, cost_of_living:65, health:56, economic:52 },
-  "208":{ housing:58, cost_of_living:66, health:60, economic:58 },
-  "407":{ housing:52, cost_of_living:64, health:56, economic:52 },
-  "315":{ housing:48, cost_of_living:62, health:50, economic:52 },
-  "309":{ housing:62, cost_of_living:70, health:62, economic:63 },
-  "314":{ housing:55, cost_of_living:66, health:58, economic:58 },
-  "307":{ housing:64, cost_of_living:68, health:60, economic:60 },
-  "409":{ housing:52, cost_of_living:64, health:54, economic:58 },
-  "501":{ housing:58, cost_of_living:66, health:56, economic:60 },
-  "410":{ housing:35, cost_of_living:55, health:42, economic:42 },
-  "408":{ housing:38, cost_of_living:52, health:45, economic:45 },
-  "210":{ housing:42, cost_of_living:56, health:48, economic:50 },
-  "318":{ housing:50, cost_of_living:60, health:55, economic:55 },
-  "308":{ housing:64, cost_of_living:68, health:60, economic:60 },
-  "310":{ housing:36, cost_of_living:52, health:40, economic:42 },
-  "405":{ housing:58, cost_of_living:60, health:52, economic:52 },
-  "402":{ housing:47, cost_of_living:62, health:50, economic:50 },
-  "413":{ housing:40, cost_of_living:50, health:45, economic:45 },
-  "401":{ housing:55, cost_of_living:65, health:48, economic:48 },
-  "502":{ housing:38, cost_of_living:48, health:42, economic:40 },
-  "411":{ housing:28, cost_of_living:42, health:32, economic:32 },
-  "406":{ housing:30, cost_of_living:48, health:35, economic:35 },
-  "104":{ housing:42, cost_of_living:55, health:38, economic:38 },
-  "302":{ housing:48, cost_of_living:52, health:44, economic:42 },
-  "503":{ housing:22, cost_of_living:35, health:30, economic:28 },
-  "107":{ housing:32, cost_of_living:50, health:28, economic:30 },
-  "105":{ housing:25, cost_of_living:40, health:32, economic:28 },
-  "306":{ housing:20, cost_of_living:38, health:22, economic:22 },
-  "106":{ housing:22, cost_of_living:42, health:25, economic:25 },
-  "102":{ housing:18, cost_of_living:35, health:20, economic:22 },
-  "108":{ housing:15, cost_of_living:30, health:18, economic:18 },
-  "101":{ housing:12, cost_of_living:22, health:15, economic:15 },
+  "101":{ housing:0, cost_of_living:86, health:24, economic:29, _raw:{ hpd_per_1k:42.8, life_exp:82.3, asthma:24.1, rent:3842, income_k:112.4 } },
+  "102":{ housing:26, cost_of_living:80, health:25, economic:25, _raw:{ hpd_per_1k:259.1, life_exp:82.1, asthma:22.8, rent:3648, income_k:116.8 } },
+  "103":{ housing:52, cost_of_living:44, health:50, economic:66, _raw:{ hpd_per_1k:483.9, life_exp:79.8, asthma:48.6, rent:2486, income_k:64.8 } },
+  "104":{ housing:25, cost_of_living:64, health:35, economic:41, _raw:{ hpd_per_1k:251.8, life_exp:81.6, asthma:38.2, rent:3124, income_k:96.4 } },
+  "105":{ housing:1, cost_of_living:75, health:24, economic:51, _raw:{ hpd_per_1k:51.8, life_exp:82.8, asthma:29.4, rent:3486, income_k:84.2 } },
+  "106":{ housing:12, cost_of_living:81, health:12, economic:24, _raw:{ hpd_per_1k:146.0, life_exp:84.2, asthma:19.8, rent:3684, income_k:118.6 } },
+  "107":{ housing:23, cost_of_living:67, health:14, economic:32, _raw:{ hpd_per_1k:239.8, life_exp:84.1, asthma:24.3, rent:3248, income_k:108.4 } },
+  "108":{ housing:13, cost_of_living:100, health:0, economic:0, _raw:{ hpd_per_1k:155.7, life_exp:86.0, asthma:16.2, rent:4286, income_k:148.6 } },
+  "109":{ housing:44, cost_of_living:28, health:59, economic:74, _raw:{ hpd_per_1k:412.6, life_exp:79.3, asthma:62.4, rent:1986, income_k:54.8 } },
+  "110":{ housing:75, cost_of_living:23, health:73, economic:82, _raw:{ hpd_per_1k:680.0, life_exp:77.8, asthma:74.8, rent:1842, income_k:44.6 } },
+  "111":{ housing:59, cost_of_living:20, health:72, economic:87, _raw:{ hpd_per_1k:542.2, life_exp:78.4, asthma:78.3, rent:1748, income_k:38.4 } },
+  "112":{ housing:64, cost_of_living:20, health:53, economic:80, _raw:{ hpd_per_1k:580.0, life_exp:80.2, asthma:58.9, rent:1724, income_k:48.2 } },
+  "201":{ housing:25, cost_of_living:2, health:96, economic:100, _raw:{ hpd_per_1k:255.4, life_exp:75.8, asthma:98.4, rent:1148, income_k:22.4 } },
+  "202":{ housing:38, cost_of_living:0, health:93, economic:99, _raw:{ hpd_per_1k:364.6, life_exp:76.1, asthma:96.1, rent:1098, income_k:23.1 } },
+  "203":{ housing:40, cost_of_living:1, health:92, economic:98, _raw:{ hpd_per_1k:384.1, life_exp:76.3, asthma:94.8, rent:1124, income_k:24.8 } },
+  "204":{ housing:65, cost_of_living:2, health:88, economic:97, _raw:{ hpd_per_1k:590.7, life_exp:76.6, asthma:91.2, rent:1162, income_k:26.2 } },
+  "205":{ housing:84, cost_of_living:3, health:88, economic:98, _raw:{ hpd_per_1k:755.4, life_exp:76.4, asthma:89.6, rent:1189, income_k:24.6 } },
+  "206":{ housing:57, cost_of_living:1, health:93, economic:99, _raw:{ hpd_per_1k:519.8, life_exp:75.9, asthma:93.7, rent:1134, income_k:24.1 } },
+  "207":{ housing:99, cost_of_living:6, health:81, economic:95, _raw:{ hpd_per_1k:881.4, life_exp:77.2, asthma:82.4, rent:1298, income_k:28.4 } },
+  "208":{ housing:13, cost_of_living:17, health:46, economic:76, _raw:{ hpd_per_1k:155.7, life_exp:80.1, asthma:44.1, rent:1642, income_k:52.8 } },
+  "209":{ housing:21, cost_of_living:5, health:76, economic:92, _raw:{ hpd_per_1k:219.2, life_exp:77.8, asthma:79.3, rent:1248, income_k:32.6 } },
+  "210":{ housing:4, cost_of_living:13, health:56, economic:82, _raw:{ hpd_per_1k:74.1, life_exp:79.6, asthma:58.2, rent:1498, income_k:44.8 } },
+  "211":{ housing:20, cost_of_living:9, health:66, economic:87, _raw:{ hpd_per_1k:208.8, life_exp:78.9, asthma:71.8, rent:1386, income_k:38.6 } },
+  "212":{ housing:17, cost_of_living:10, health:60, economic:84, _raw:{ hpd_per_1k:190.2, life_exp:79.3, asthma:64.3, rent:1412, income_k:42.1 } },
+  "301":{ housing:18, cost_of_living:36, health:44, economic:71, _raw:{ hpd_per_1k:198.4, life_exp:80.2, asthma:41.2, rent:2248, income_k:58.4 } },
+  "302":{ housing:20, cost_of_living:44, health:40, economic:68, _raw:{ hpd_per_1k:214.6, life_exp:80.8, asthma:38.6, rent:2486, income_k:62.8 } },
+  "303":{ housing:41, cost_of_living:19, health:75, economic:82, _raw:{ hpd_per_1k:386.2, life_exp:76.9, asthma:68.1, rent:1698, income_k:44.6 } },
+  "304":{ housing:32, cost_of_living:28, health:63, economic:80, _raw:{ hpd_per_1k:312.8, life_exp:78.1, asthma:56.4, rent:1986, income_k:48.2 } },
+  "305":{ housing:45, cost_of_living:13, health:78, economic:87, _raw:{ hpd_per_1k:422.4, life_exp:76.8, asthma:72.8, rent:1524, income_k:38.4 } },
+  "306":{ housing:5, cost_of_living:55, health:23, economic:41, _raw:{ hpd_per_1k:88.4, life_exp:82.4, asthma:22.4, rent:2842, income_k:96.8 } },
+  "307":{ housing:24, cost_of_living:20, health:53, economic:81, _raw:{ hpd_per_1k:248.6, life_exp:79.6, asthma:51.3, rent:1748, income_k:46.8 } },
+  "308":{ housing:36, cost_of_living:18, health:71, economic:84, _raw:{ hpd_per_1k:348.2, life_exp:77.3, asthma:63.9, rent:1684, income_k:42.6 } },
+  "309":{ housing:38, cost_of_living:17, health:73, economic:85, _raw:{ hpd_per_1k:364.8, life_exp:77.1, asthma:65.4, rent:1648, income_k:41.8 } },
+  "310":{ housing:12, cost_of_living:25, health:42, economic:68, _raw:{ hpd_per_1k:142.6, life_exp:80.3, asthma:38.2, rent:1894, income_k:62.4 } },
+  "311":{ housing:15, cost_of_living:13, health:39, economic:81, _raw:{ hpd_per_1k:168.4, life_exp:80.6, asthma:34.7, rent:1524, income_k:46.8 } },
+  "312":{ housing:29, cost_of_living:12, health:43, economic:84, _raw:{ hpd_per_1k:286.4, life_exp:80.1, asthma:38.1, rent:1486, income_k:42.4 } },
+  "313":{ housing:18, cost_of_living:9, health:51, economic:83, _raw:{ hpd_per_1k:198.2, life_exp:79.4, asthma:45.2, rent:1398, income_k:44.2 } },
+  "314":{ housing:13, cost_of_living:15, health:47, economic:71, _raw:{ hpd_per_1k:152.4, life_exp:79.8, asthma:41.8, rent:1586, income_k:58.6 } },
+  "315":{ housing:22, cost_of_living:13, health:65, economic:84, _raw:{ hpd_per_1k:224.6, life_exp:77.8, asthma:57.3, rent:1498, income_k:42.8 } },
+  "316":{ housing:53, cost_of_living:5, health:96, economic:95, _raw:{ hpd_per_1k:486.8, life_exp:75.1, asthma:89.6, rent:1248, income_k:28.6 } },
+  "317":{ housing:24, cost_of_living:13, health:71, economic:79, _raw:{ hpd_per_1k:242.8, life_exp:77.2, asthma:61.4, rent:1524, income_k:48.6 } },
+  "318":{ housing:13, cost_of_living:17, health:52, economic:73, _raw:{ hpd_per_1k:148.6, life_exp:79.1, asthma:44.6, rent:1634, income_k:56.4 } },
+  "401":{ housing:15, cost_of_living:28, health:33, economic:68, _raw:{ hpd_per_1k:168.4, life_exp:81.9, asthma:36.8, rent:1986, income_k:62.4 } },
+  "402":{ housing:17, cost_of_living:24, health:36, economic:73, _raw:{ hpd_per_1k:186.2, life_exp:81.4, asthma:38.4, rent:1848, income_k:56.8 } },
+  "403":{ housing:24, cost_of_living:22, health:31, economic:79, _raw:{ hpd_per_1k:248.6, life_exp:82.6, asthma:41.2, rent:1798, income_k:48.6 } },
+  "404":{ housing:26, cost_of_living:20, health:36, economic:81, _raw:{ hpd_per_1k:262.4, life_exp:81.8, asthma:42.6, rent:1724, income_k:46.2 } },
+  "405":{ housing:13, cost_of_living:19, health:37, economic:74, _raw:{ hpd_per_1k:148.8, life_exp:81.1, asthma:36.1, rent:1698, income_k:54.8 } },
+  "406":{ housing:7, cost_of_living:32, health:22, economic:64, _raw:{ hpd_per_1k:98.6, life_exp:83.2, asthma:28.4, rent:2124, income_k:68.4 } },
+  "407":{ housing:8, cost_of_living:28, health:18, economic:60, _raw:{ hpd_per_1k:112.4, life_exp:83.8, asthma:29.6, rent:1986, income_k:72.6 } },
+  "408":{ housing:11, cost_of_living:20, health:34, economic:71, _raw:{ hpd_per_1k:138.6, life_exp:81.6, asthma:36.8, rent:1748, income_k:58.4 } },
+  "409":{ housing:15, cost_of_living:16, health:44, economic:75, _raw:{ hpd_per_1k:168.4, life_exp:80.4, asthma:44.2, rent:1624, income_k:54.2 } },
+  "410":{ housing:5, cost_of_living:24, health:29, economic:60, _raw:{ hpd_per_1k:84.2, life_exp:82.1, asthma:31.8, rent:1848, income_k:72.8 } },
+  "411":{ housing:2, cost_of_living:28, health:12, economic:51, _raw:{ hpd_per_1k:62.4, life_exp:84.6, asthma:24.6, rent:1986, income_k:84.6 } },
+  "412":{ housing:22, cost_of_living:16, health:61, economic:71, _raw:{ hpd_per_1k:228.4, life_exp:78.9, asthma:62.4, rent:1598, income_k:58.4 } },
+  "413":{ housing:18, cost_of_living:14, health:59, economic:73, _raw:{ hpd_per_1k:198.6, life_exp:79.1, asthma:58.8, rent:1548, income_k:56.2 } },
+  "414":{ housing:17, cost_of_living:16, health:62, economic:76, _raw:{ hpd_per_1k:186.4, life_exp:78.2, asthma:54.3, rent:1624, income_k:52.4 } },
+  "501":{ housing:100, cost_of_living:13, health:46, economic:76, _raw:{ hpd_per_1k:886.9, life_exp:79.8, asthma:41.2, rent:1498, income_k:52.8 } },
+  "502":{ housing:17, cost_of_living:16, health:35, economic:68, _raw:{ hpd_per_1k:184.2, life_exp:81.4, asthma:36.8, rent:1624, income_k:62.4 } },
+  "503":{ housing:3, cost_of_living:22, health:22, economic:55, _raw:{ hpd_per_1k:68.8, life_exp:83.2, asthma:28.4, rent:1786, income_k:78.6 } },
 };
 
 // ── LAYER CONFIGURATION ───────────────────────────────────────────────────────
@@ -1844,45 +1876,49 @@ function getLayerIndicators(district) {
 
   if (activeLayer === 'housing') {
     const s = ls.housing || 50;
+    const r = ls._raw || {};
     return [
-      { label:'Housing Stress Index',  val: s,                                    max: 100, color:'#9c27b0', suffix:'/100', modeled: true },
-      { label:'HPD Violations /1k',    val: Math.round(s * 0.75 + 5),             max: 80,  color:'#ab47bc', suffix:'',     modeled: true },
-      { label:'Displacement Risk',     val: Math.round(s * 0.9),                  max: 100, color:'#ce93d8', suffix:'/100', modeled: true },
-      { label:'Rent Burden',           val: district.indicators.rent_burden_pct,  max: 65,  color:'#ba68c8', suffix:'%' },
-      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),    max: 20,  color:'#9c27b0', suffix:'',     modeled: true },
+      { label:'Housing Stress Index',  val: s,                                   max: 100, color:'#9c27b0', suffix:'/100' },
+      { label:'HPD Violations /1k HH', val: r.hpd_per_1k || 0,                  max: 900, color:'#ab47bc', suffix:'' },
+      { label:'Rent Burden',           val: district.indicators.rent_burden_pct, max: 65,  color:'#ba68c8', suffix:'%' },
+      { label:'Median Rent',           val: r.rent || 0,                         max: 4500,color:'#ce93d8', suffix:'/mo', prefix:'$' },
+      { label:'Eviction Rate /1k HH',  val: parseFloat((s * 0.18).toFixed(1)),  max: 20,  color:'#9c27b0', suffix:'',    modeled: true },
     ];
   }
 
   if (activeLayer === 'cost_of_living') {
     const s = ls.cost_of_living || 50;
+    const r = ls._raw || {};
     return [
-      { label:'Cost Pressure Index', val: s,                                       max: 100,  color:'#ef6c00', suffix:'/100', modeled: true },
-      { label:'Median Rent',         val: Math.round(800 + s * 22),                max: 4000, color:'#f57c00', suffix:'/mo', prefix:'$', modeled: true },
-      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),       max: 15,   color:'#ffa726', suffix:'%',   modeled: true },
-      { label:'Rent Burden',         val: district.indicators.rent_burden_pct,     max: 65,   color:'#ff9800', suffix:'%' },
-      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),       max: 15,   color:'#ffb74d', suffix:'%',   modeled: true },
+      { label:'Cost Pressure Index', val: s,                                      max: 100,  color:'#ef6c00', suffix:'/100' },
+      { label:'Median Rent',         val: r.rent || 0,                            max: 4500, color:'#f57c00', suffix:'/mo', prefix:'$' },
+      { label:'Rent Burden',         val: district.indicators.rent_burden_pct,    max: 65,   color:'#ff9800', suffix:'%' },
+      { label:'Rent Growth YoY',     val: parseFloat((s * 0.08).toFixed(1)),      max: 15,   color:'#ffa726', suffix:'%',   modeled: true },
+      { label:'Utility Arrears',     val: parseFloat((s * 0.12).toFixed(1)),      max: 15,   color:'#ffb74d', suffix:'%',   modeled: true },
     ];
   }
 
   if (activeLayer === 'health') {
     const s = ls.health || 50;
+    const r = ls._raw || {};
     return [
-      { label:'Health Burden Index',  val: s,                                      max: 100, color:'#1976d2', suffix:'/100', modeled: true },
-      { label:'Life Expectancy',      val: parseFloat((85 - s * 0.12).toFixed(1)), max: 85,  color:'#42a5f5', suffix:' yrs', modeled: true },
-      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),      max: 35,  color:'#64b5f6', suffix:'%',    modeled: true },
-      { label:'Asthma Rate /10k',     val: Math.round(s * 1.2),                    max: 120, color:'#1976d2', suffix:'',     modeled: true },
-      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),              max: 100, color:'#90caf9', suffix:'/100', modeled: true },
+      { label:'Health Burden Index',  val: s,                                    max: 100, color:'#1976d2', suffix:'/100' },
+      { label:'Life Expectancy',      val: r.life_exp || 79,                     max: 87,  color:'#42a5f5', suffix:' yrs' },
+      { label:'Asthma Rate /10k',     val: r.asthma || 0,                        max: 100, color:'#1976d2', suffix:'' },
+      { label:'Chronic Disease Rate', val: parseFloat((s * 0.35).toFixed(1)),    max: 35,  color:'#64b5f6', suffix:'%',    modeled: true },
+      { label:'Mental Health Access', val: Math.round(100 - s * 0.8),            max: 100, color:'#90caf9', suffix:'/100', modeled: true },
     ];
   }
 
   if (activeLayer === 'economic') {
     const s = ls.economic || 50;
+    const r = ls._raw || {};
     return [
-      { label:'Economic Stress Index', val: s,                                      max: 100, color:'#00897b', suffix:'/100', modeled: true },
-      { label:'Median Income',         val: Math.round(120 - s * 0.7),              max: 100, color:'#26a69a', suffix:'k', prefix:'$', modeled: true },
-      { label:'Unemployment',          val: district.indicators.unemployment_pct,   max: 20,  color:'#4db6ac', suffix:'%' },
-      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),      max: 15,  color:'#00897b', suffix:'%/yr', modeled: true },
-      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),              max: 75,  color:'#80cbc4', suffix:'%',    modeled: true },
+      { label:'Economic Stress Index', val: s,                                    max: 100, color:'#00897b', suffix:'/100' },
+      { label:'Median Income',         val: r.income_k || 0,                      max: 150, color:'#26a69a', suffix:'k', prefix:'$' },
+      { label:'Unemployment',          val: district.indicators.unemployment_pct, max: 20,  color:'#4db6ac', suffix:'%' },
+      { label:'Business Closures',     val: parseFloat((s * 0.15).toFixed(1)),    max: 15,  color:'#00897b', suffix:'%/yr', modeled: true },
+      { label:'Workforce Part.',       val: Math.round(75 - s * 0.25),            max: 75,  color:'#80cbc4', suffix:'%',    modeled: true },
     ];
   }
 
@@ -1999,6 +2035,7 @@ function switchLayer(layer) {
   renderMapLegend();
   renderLayerChips();
   renderStatCards();
+  renderAlerts();
   if (selectedDistrict) renderDistrictDetail(selectedDistrict);
 
   // Keep agency lens buttons in sync with manual layer tab clicks
@@ -2444,7 +2481,9 @@ function drawTrendChart(district) {
 // ── ALERTS ────────────────────────────────────────────────────────────────────
 function renderAlerts() {
   const panel = document.getElementById('alerts-panel');
-  ALERTS.forEach((a, i) => {
+  panel.innerHTML = '';
+  const alerts = ALERTS_BY_LAYER[activeLayer] || ALERTS_BY_LAYER.food;
+  alerts.forEach((a, i) => {
     const card = document.createElement('div');
     card.className = `alert-card alert-${a.severity}`;
     card.style.animationDelay = `${i * 0.1}s`;

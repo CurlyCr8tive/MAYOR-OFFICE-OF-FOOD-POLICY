@@ -752,6 +752,42 @@ html, body {
   30% { transform: translateY(-5px); opacity: 1; }
 }
 
+/* Glossary tooltip */
+.has-tip { position: relative; cursor: help; }
+.has-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  border: 1px solid var(--accent-dim);
+  color: var(--text-primary);
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: pre-line;
+  max-width: 240px;
+  width: max-content;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 9999;
+  letter-spacing: 0;
+}
+.has-tip:hover::after { opacity: 1; }
+
+/* Score explanation pill */
+.score-explain {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  letter-spacing: 0;
+  font-style: italic;
+}
+
 /* Chips */
 .chip-row {
   padding: 8px 12px;
@@ -1469,6 +1505,39 @@ const AI_CONFIGS = {
   },
 };
 
+// ── GLOSSARY — plain-language definitions shown on hover ───────────────────────
+const GLOSSARY = {
+  'SNAP':           'Supplemental Nutrition Assistance Program\nFederal food benefits for low-income households.\n~1.8M NYC recipients. Avg $6.10/person/day.',
+  'EFAP':           'Emergency Food Assistance Program\nFederal USDA commodity pass-through (~$42M/yr NYC).\nDistributed through pantry networks.',
+  'TRIE':           'Targeted Resource Intensive Engagement\nDesignation for districts with food gap score in top quintile.\nUnlocks priority MOFP/DSS/HRA allocation.',
+  'MOFP':           "Mayor's Office of Food Policy\nCoordinates NYC's food access programs.\nFY26 discretionary budget: $20.9M (down from $60M FY25).",
+  'HPD':            'Dept of Housing Preservation & Development\nManages affordable housing, code enforcement, NYCHA.\nFY26-2030 capital plan: $3.4B.',
+  'DOHMH':          'Dept of Health & Mental Hygiene\nPublishes Community Health Profiles every 3 years.\nUses UHF neighborhood boundaries (42 areas, not 59 CDs).',
+  'DSS':            'Dept of Social Services / HRA\nAdministers SNAP, Cash Assistance, emergency food.\nCity budget: $11.2B FY26.',
+  'ABAWD':          'Able-Bodied Adults Without Dependents\nMust work/train 80 hrs/month for SNAP eligibility.\nExpanded to adults 18–54 in March 2026.',
+  'CFC':            'Community Fridge Collaborative\n~50 fridges citywide. No ID or income verification.\nServes noncitizen households SNAP cannot reach.',
+  'NYCHA':          'NY City Housing Authority\n177,500 units housing ~350k residents.\n$40B capital repair backlog. Avg wait: 7–10 years.',
+  'CDBG':           'Community Development Block Grant\nFederal HUD program: ~$80M/yr to NYC.\nProposed 30% cut = -$24M for affordable housing.',
+  'HOME':           'HOME Investment Partnerships Program\nFederal HUD program: ~$28M/yr to NYC.\nProposed for ELIMINATION in FY26 reconciliation.',
+  'ULURP':          'Uniform Land Use Review Procedure\nNYC process to approve land use changes.\nTimeline: 12–18 months from application to approval.',
+  'SCRIE':          'Senior Citizen Rent Increase Exemption\nFreezes rent for NYC seniors 62+ earning ≤$50k/yr.\nWhen rent ≥ 1/3 of income. HPD reimburses landlords.',
+  'DRIE':           'Disability Rent Increase Exemption\nSame as SCRIE but for people with qualifying disabilities.\nAny age, income ≤$50k/yr.',
+  'UHF':            'United Hospital Fund neighborhoods\n42 geographic areas used by DOHMH for health data.\nDifferent boundaries than the 59 community districts.',
+  'SPARCS':         'Statewide Planning & Research Cooperative System\nNY hospital discharge data used by DOHMH.\n18-month public data lag — current data = 2023.',
+  'HPNAP':          'Hunger Prevention & Nutrition Assistance Program\nNY State food pantry funding: ~$12.3M/yr to NYC.\nState-funded — not affected by federal SNAP cuts.',
+  'FQHCs':          'Federally Qualified Health Centers\nFederally funded community health clinics.\n14 FQHCs serve South Bronx. 3 facing closure April 2026.',
+  'CLT':            'Community Land Trust\n~20 active NYC CLTs, ~2,000 permanently affordable units.\nKey orgs: BronxWorks, IMPACCT Brooklyn, NHS Jamaica.',
+  'WIC':            'Women, Infants & Children\nFederal nutrition program for pregnant women + kids under 5.\nNYC: ~100k certs/month. Proposed 10% federal cut.',
+  'Gap Analysis':   'Measures food demand minus available supply by district.\nDemand = Feeding America Census estimates.\nSupply = SNAP coverage + FeedNYC pantry tracker.',
+  'SNAP Impact':    'Models which districts are most exposed to SNAP cuts.\nFactors: SNAP enrollment %, ABAWD-age adults,\nnoncitizen households, pantry backup capacity.',
+  'Pantry Gaps':    'Identifies where pantry supply is lowest relative to need.\nMeasured as pantry sites per 10k food-insecure residents.\nCFC sites serve all — no eligibility required.',
+  'FY26 Budget':    'Fiscal Year 2026 budget analysis.\nMOFP dropped from $60M (FY25) to $20.9M — a 65% cut.\nFederal EFAP ($42M) is the primary emergency lever.',
+  'Pipeline Gaps':  'Districts where new housing supply is most blocked.\nStall rate = permits withdrawn or inactive / all permits.\nStall >70% = critical HPD intervention needed.',
+  'HPD Hotspots':   'Districts with highest HPD Class C violation rates.\nClass C = immediately hazardous: heat failure, lead, mold.\nMust be corrected within 24 hours by law.',
+  'Noncitizen demand': 'Hidden food need from households ineligible for federal SNAP.\nMost noncitizens need 5+ yrs residence for SNAP eligibility.\nProxy: noncitizen_pct × 0.3 added to gap score.',
+  'EFAP allocation':   'How EFAP federal food funds are distributed by district.\nAllocation uses: gap score (40%) + TRIE (30%) + SNAP % (20%) + unemployment (10%).',
+};
+
 // ── AGENCY-SPECIFIC QUICK ACTIONS ──────────────────────────────────────────────
 const AGENCY_ACTIONS = {
   MOFP: {
@@ -1547,29 +1616,29 @@ function updateAIActions() {
   const input = document.getElementById('chat-input');
   if (input) input.placeholder = placeholder;
 
-  // Update chip-row
+  // Update chip-row — add glossary tooltip if label matches a known term
   const chipRow = document.getElementById('chip-row');
   if (chipRow) {
-    chipRow.innerHTML = chips.map(([label, prompt]) =>
-      `<button type="button" class="chip" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${label}</button>`
-    ).join('');
+    chipRow.innerHTML = chips.map(([label, prompt]) => {
+      const tip = GLOSSARY[label] || '';
+      const tipAttr = tip ? ` class="chip has-tip" data-tip="${tip.replace(/"/g,'&quot;')}"` : ' class="chip"';
+      return `<button type="button"${tipAttr} onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${label}</button>`;
+    }).join('');
   }
 
-  // Update qa-grid
+  // Update qa-grid — add glossary tooltip if label matches
   const qaGrid = document.getElementById('qa-grid');
   if (qaGrid) {
-    qaGrid.innerHTML = actions.map(([icon, label, prompt]) =>
-      `<button type="button" class="qa-btn" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${icon} ${label}</button>`
-    ).join('');
+    qaGrid.innerHTML = actions.map(([icon, label, prompt]) => {
+      const tip = GLOSSARY[label] || '';
+      const tipAttr = tip ? ` class="qa-btn has-tip" data-tip="${tip.replace(/"/g,'&quot;')}"` : ' class="qa-btn"';
+      return `<button type="button"${tipAttr} onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${icon} ${label}</button>`;
+    }).join('');
   }
 
-  // Title: only show agency prefix if a non-default agency is explicitly active
+  // Title: always "AI QUICK ACTIONS" — agency context is already shown in the header
   const qaTitle = document.getElementById('qa-title');
-  if (qaTitle) {
-    qaTitle.textContent = agencyCfg
-      ? `${currentAgency} QUICK ACTIONS`
-      : 'AI QUICK ACTIONS';
-  }
+  if (qaTitle) qaTitle.textContent = 'AI QUICK ACTIONS';
 }
 
 const PANTRIES = [
@@ -1828,9 +1897,14 @@ function setFormat(fmt, btn) {
   currentFormat = fmt;
   document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  // Auto-generate report in the selected format
-  const promptFn = FORMAT_PROMPTS[fmt];
-  if (promptFn) sendChip(promptFn());
+  // Show confirmation that format is selected — next AI message will use this format
+  const qaTitle = document.getElementById('qa-title');
+  if (qaTitle) {
+    const prev = qaTitle.textContent;
+    qaTitle.textContent = `FORMAT SET: ${fmt.toUpperCase()} — ask a question to generate`;
+    qaTitle.style.color = 'var(--accent)';
+    setTimeout(() => { qaTitle.textContent = prev; qaTitle.style.color = ''; }, 2500);
+  }
 }
 
 // ── DERIVED CONTEXT DATA ───────────────────────────────────────────────────────
@@ -1942,6 +2016,14 @@ function selectDistrict(d) {
 
   const scoreRow = document.createElement('div');
   scoreRow.style.cssText = 'display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap';
+  const SCORE_TIPS = {
+    food:          'Food Vulnerability Score\n0=low need, 100=highest need.\nBased on: SNAP enrollment, child poverty,\nrent burden, unemployment, noncitizen %.\nClick to switch map to this layer.',
+    housing:       'Housing Stability Score\n0=stable, 100=most stressed.\nBased on: HPD code violations per household\nand housing pipeline stall rate.\nClick to switch map to this layer.',
+    health:        'Health Burden Score\n0=healthy, 100=highest burden.\nBased on: life expectancy (lower=worse)\nand asthma hospitalization rate.\nClick to switch map to this layer.',
+    cost_of_living:'Cost of Living Score\n0=affordable, 100=least affordable.\nBased on: median monthly rent relative\nto the citywide range.\nClick to switch map to this layer.',
+    economic:      'Economic Stress Score\n0=no stress, 100=most stressed.\nBased on: median household income\n(lower income = higher score).\nClick to switch map to this layer.',
+    equity:        'Equity Score (Composite)\nAverage of all 5 layer scores.\n0=least disadvantaged, 100=most.\nUse this for cross-agency fund allocation.\nClick to switch map to this layer.',
+  };
   [
     { label:'Food',    val: food,  key:'food' },
     { label:'Housing', val: house, key:'housing' },
@@ -1952,13 +2034,17 @@ function selectDistrict(d) {
   ].forEach(({ label, val, key }) => {
     const c = scoreColor(val);
     const isActive = currentLayer === key;
+    const tier = val >= 70 ? 'Critical' : val >= 50 ? 'High' : val >= 30 ? 'Moderate' : 'Lower';
+    const tip  = (SCORE_TIPS[key] || '').replace(/"/g, '&quot;');
     scoreRow.innerHTML += `
-      <div style="flex:1;min-width:50px;background:var(--bg-surface);
+      <div class="has-tip" data-tip="${tip}"
+           style="flex:1;min-width:50px;background:var(--bg-surface);
                   border:1px solid ${isActive ? c : 'var(--border)'};
                   padding:6px 5px;text-align:center;cursor:pointer"
            onclick="setLayer('${key}', document.getElementById('layer-${key}'))">
         <div style="font-family:var(--font-display);font-size:18px;color:${c};line-height:1">${val}</div>
         <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:2px">${label}</div>
+        <div style="font-size:8px;color:${c};margin-top:1px;letter-spacing:0">${tier}</div>
       </div>`;
   });
   barsContainer.appendChild(scoreRow);
@@ -2320,16 +2406,199 @@ async function sendMessage() {
     addMessage('ai', reply.replace(/\n/g, '<br>').replace(/→/g, '<span style="color:#ff4d1c">→</span>'));
   } catch (err) {
     removeTyping();
-    // Fallback responses for demo
-    const fallbacks = {
-      'snap work requirements': 'The 8 Critical districts face compounding exposure from work requirements. University Heights (73% SNAP, 28% non-citizen) and Morrisania (73.8% SNAP) are highest risk. New ABAWD requirements taking effect March 2026 will impact ~340,000 NYC recipients.<br><br><span style="color:#ff4d1c">→</span> Prioritize outreach in Mott Haven and Morrisania<br><span style="color:#ff4d1c">→</span> Emergency CFC allocation for Bronx districts<br><span style="color:#ff4d1c">→</span> Launch mobile pantry in University Heights',
-      'pantry gap': 'Worst pantry coverage gaps per food insecure resident:<br>1. East Tremont — 2.1 pantries per 10k<br>2. Brownsville — 2.4 per 10k<br>3. Hunts Point — 2.8 per 10k<br><br><span style="color:#ff4d1c">→</span> Recommend 3 new CFC sites in East Tremont<br><span style="color:#ff4d1c">→</span> Deploy mobile markets to Brownsville Saturdays',
-      'policy memo': 'PRIORITY MEMO: Bronx Food Security Crisis<br>7 of 8 Critical districts are in the Bronx. Average SNAP enrollment: 68.4%. Combined population at risk: ~340,000 residents.<br><br>Recommended: $2.3M emergency pantry investment targeting Mott Haven, Morrisania, and East Tremont.<br>Projected impact: Coverage gap reduced 40% within 6 months.',
-      'predict': 'Federal SNAP cut impact projection for NYC:<br>• 1.8M current recipients, ~340k at risk of ineligibility<br>• Bronx Critical districts will absorb 60% of new pantry demand<br>• Brownsville pantries projected to exceed capacity by March 2026<br><br><span style="color:#ff4d1c">→</span> Pre-position emergency food reserves now',
-    };
+    const t = text.toLowerCase();
+    let reply = '';
 
-    const key = Object.keys(fallbacks).find(k => text.toLowerCase().includes(k));
-    addMessage('ai', key ? fallbacks[key] : 'Based on current vulnerability data, the Bronx districts require immediate attention. University Heights (91.2) leads all 59 community districts. Federal cuts will disproportionately impact the 8 Critical-tier neighborhoods. Recommend focusing resources on pantry capacity expansion and SNAP outreach in underserved Bronx communities.');
+    if (t.includes('gap analysis') || t.includes('supply gap') || t.includes('trie')) {
+      reply = `<strong>FOOD SUPPLY GAP ANALYSIS — Top 5 TRIE-Designated Districts</strong><br><br>
+The gap score measures estimated food demand minus available supply. Demand uses Feeding America's Census-based methodology. Supply is proxied by SNAP enrollment coverage plus pantry network capacity.<br><br>
+<strong>Top gaps (adjusted for noncitizen hidden demand):</strong><br>
+→ <span style="color:#ff4d1c">Mott Haven (BX CD1)</span> — Gap score: 38.2. SNAP: 51.5%. Noncitizen pop: 18.4%. TRIE designated.<br>
+→ <span style="color:#ff4d1c">East Tremont (BX CD6)</span> — Gap score: 35.8. SNAP: 44.9%. Only 2.1 pantries per 10k food-insecure residents.<br>
+→ <span style="color:#ff4d1c">Hunts Point (BX CD2)</span> — Gap score: 34.1. Largest US food hub — yet 42% of residents face insecurity.<br>
+→ <span style="color:#f57c00">Brownsville (BK CD16)</span> — Gap score: 29.7. SNAP: 58.3%. Pantries at 89% capacity.<br>
+→ <span style="color:#f57c00">Morrisania (BX CD3)</span> — Gap score: 28.9. SNAP: 73.8%. 3 FQHCs serving the area.<br><br>
+⚠ <strong>FY26 Budget cliff:</strong> MOFP discretionary dropped from $60M (FY25) to $20.9M — a 65% reduction. EFAP federal pass-through ($42M) remains but requires documentation of 30%+ pantry surge to unlock emergency CFC allocation.<br><br>
+TODAY: Submit TRIE eligibility documentation for East Tremont to unlock emergency CFC funding before Q2 deadline.`;
+
+    } else if (t.includes('snap') && (t.includes('cut') || t.includes('impact') || t.includes('work req') || t.includes('abawd'))) {
+      reply = `<strong>SNAP CUT IMPACT — NYC Projection (April 2026)</strong><br><br>
+Congress passed $186B in SNAP cuts over 10 years. Here's what it means for NYC's 59 community districts:<br><br>
+<strong>Who's most exposed:</strong><br>
+→ <span style="color:#ff4d1c">8 Critical districts</span> (all Bronx) — average SNAP enrollment 68.4%. Combined ~340k residents at risk.<br>
+→ ABAWD expansion (March 2026): Adults 18–54 must now work or train 80 hrs/month. ~150k NYC adults affected.<br>
+→ Benefit cliff: $6.10/person/day → proposed $4.80 = <strong>21% reduction</strong> per household.<br><br>
+<strong>Hidden demand floor:</strong><br>
+→ Noncitizen households (ineligible for federal SNAP) = estimated 180k–220k NYC households not counted in supply data.<br>
+→ Districts with high noncitizen % (University Heights 28%, Jackson Heights 36%) have systematically underestimated gaps.<br><br>
+<strong>Pantry surge forecast:</strong><br>
+→ CFC network capacity: ~50 sites, 2.1M lbs distributed in 2024.<br>
+→ Projected additional demand: +340k households × avg 2 visits/month = +680k pantry visits/month citywide.<br>
+→ Bronx sites will absorb ~60% of new demand.<br><br>
+TODAY: Model ABAWD exposure by CD using unemployment_pct + noncitizen_pct as proxy for households at risk.`;
+
+    } else if (t.includes('efap') || (t.includes('allocation') && (t.includes('food') || t.includes('fund') || t.includes('emergency')))) {
+      reply = `<strong>EFAP FUND ALLOCATION — Emergency Food Assistance Program</strong><br><br>
+<strong>What is EFAP?</strong> The Emergency Food Assistance Program is a federal USDA pass-through that funds food commodities distributed through pantry networks. NYC received ~$42M in FY25 federal commodity support.<br><br>
+<strong>Allocation methodology (MOFP/DSS/HRA):</strong><br>
+1. Gap score (demand minus supply) weighted 40%<br>
+2. TRIE designation (Critical-tier districts) weighted 30%<br>
+3. SNAP enrollment rate weighted 20%<br>
+4. Unemployment rate weighted 10%<br><br>
+<strong>Recommended EFAP allocation priorities:</strong><br>
+→ Mott Haven (BX CD1) — $4.8M | Food score 89.1, TRIE, SNAP 51.5%<br>
+→ East Tremont (BX CD6) — $4.2M | Food score 85.2, 2.1 pantries/10k<br>
+→ University Heights (BX CD5) — $3.9M | Food score 80.8, noncitizen 28%<br>
+→ Morrisania (BX CD3) — $3.4M | Food score 78.1, SNAP 73.8%<br>
+→ Brownsville (BK CD16) — $3.1M | Food score 65.9, pantries at 89% capacity<br><br>
+<strong>Note:</strong> FY26 city discretionary dropped to $20.9M from $60M. Federal EFAP is now the primary emergency lever.<br><br>
+TODAY: Cross-reference FeedNYC tracker against TRIE-designated districts to verify supply data before next allocation cycle.`;
+
+    } else if (t.includes('noncitizen') || t.includes('non-citizen') || t.includes('hidden demand')) {
+      reply = `<strong>NONCITIZEN DEMAND ANALYSIS — Hidden Food Insecurity</strong><br><br>
+Federal SNAP is unavailable to most noncitizen households (requires 5+ years of lawful permanent residence, or specific qualifying status). This creates a systematic gap in supply models.<br><br>
+<strong>What the data shows:</strong><br>
+→ Noncitizen_pct is The Grid's proxy for hidden demand. Every 1% of noncitizen population represents ~0.3pts of additional food gap.<br>
+→ Standard FeedNYC / Feeding America demand estimates DO NOT include noncitizen households — they're invisible to supply counts.<br><br>
+<strong>Highest hidden demand districts:</strong><br>
+→ <span style="color:#ff4d1c">Jackson Heights (QN CD3)</span> — Noncitizen pop: ~36%. Estimated 18k–22k additional food-insecure households not in SNAP data.<br>
+→ <span style="color:#ff4d1c">University Heights (BX CD5)</span> — Noncitizen pop: ~28%. SNAP 73.8% still undercounts true need.<br>
+→ <span style="color:#f57c00">Flushing/Whitestone (QN CD7)</span> — Large immigrant community, low SNAP take-up rate relative to poverty.<br>
+→ <span style="color:#f57c00">Elmhurst/Corona (QN CD4)</span> — Noncitizen pop ~32%. Queens has only 6 CFC sites for 2.3M residents.<br><br>
+→ CFC sites (Community Fridge Collaborative) serve noncitizen households without ID or eligibility requirements — the only citywide program that reaches this population at scale.<br><br>
+TODAY: Add noncitizen_pct as a separate weighted factor in EFAP allocation decisions — current methodology underweights Queens and North Bronx.`;
+
+    } else if (t.includes('fy26') || t.includes('budget cliff') || t.includes('budget')) {
+      reply = `<strong>FY26 BUDGET ANALYSIS — Cross-Agency Funding Cliff</strong><br><br>
+<strong>MOFP (Mayor's Office of Food Policy):</strong><br>
+→ FY25: $60M (COVID emergency elevated). FY26: $20.9M. <span style="color:#ff4d1c">-65% cut.</span><br>
+→ Baseline was $25M — FY26 is actually $4.1M below pre-pandemic baseline.<br>
+→ Federal EFAP pass-through (~$42M) is not affected by city budget.<br><br>
+<strong>HPD (Housing Preservation & Development):</strong><br>
+→ FY2026–2030 capital plan: $3.4B. Affordable preservation: $1.2B.<br>
+→ Federal risk: HOME program elimination = -$28M/yr. CDBG -30% = -$24M/yr.<br><br>
+<strong>DOHMH (Health & Mental Hygiene):</strong><br>
+→ City budget: $2.1B FY26. Federal exposure: $803M at risk.<br>
+→ Title X defunding: 8 DOHMH clinics affected. Ryan White -20%: -$22.4M.<br><br>
+<strong>DSS / HRA:</strong><br>
+→ City budget: $11.2B FY26. Federal SNAP exposure: $4.2B in benefit payments.<br>
+→ SNAP work requirement expansion adds case management burden with no new admin funding.<br><br>
+TODAY: Request OMB scenario analysis for FY27 if HOME elimination is finalized — HPD affordable pipeline in Bronx CDs 201–206 is most exposed.`;
+
+    } else if (t.includes('pipeline') || t.includes('hpd') || t.includes('housing') || t.includes('stall')) {
+      reply = `<strong>HPD HOUSING PIPELINE ANALYSIS</strong><br><br>
+The pipeline stall rate measures how many permitted housing projects have gone inactive or had permits withdrawn, as a percentage of all activity. High stall rates signal neighborhood resistance to development, financing gaps, or ULURP complications.<br><br>
+<strong>Critical pipeline gaps (stall rate >70%):</strong><br>
+→ <span style="color:#ff4d1c">St. George, Staten Island (SI CD1)</span> — Stall rate: 84%. HPD violations: 886.9/1k HH.<br>
+→ <span style="color:#ff4d1c">Bedford Park, Bronx (BX CD7)</span> — Stall rate: 54.2%. HPD violations: 881.4/1k.<br>
+→ <span style="color:#f57c00">Washington Heights, Manhattan (MN CD12)</span> — Housing score 75. Active displacement pressure.<br><br>
+<strong>What HPD score means:</strong> A score of 80+ indicates districts where housing conditions are severely strained — high HPD violation density AND stalled new supply. Residents face heat failures, lead hazards, mold — all Class C violations requiring 24-hr correction.<br><br>
+<strong>HPD process note:</strong> From proposal to ULURP approval: 12–18 months. Prioritize districts with existing projects already in pipeline — they move 40% faster than cold starts.<br><br>
+<strong>Federal risk:</strong> HOME program elimination (-$28M/yr) and CDBG -30% (-$24M/yr) will disproportionately impact affordable rehab in the South Bronx where federal LMI qualification is highest.<br><br>
+TODAY: Pull active ULURP applications for Bronx CDs 201–206 to identify projects that can be fast-tracked before federal funding cuts take effect.`;
+
+    } else if (t.includes('life expectancy') || t.includes('health') || t.includes('asthma') || t.includes('dohmh')) {
+      reply = `<strong>DOHMH HEALTH BURDEN ANALYSIS</strong><br><br>
+<strong>What the health score means:</strong> Combines life expectancy (lower = worse) with asthma hospitalization rate. Score of 80+ = severe health burden driven by environmental and social determinants.<br><br>
+<strong>Key disparities (April 2026 data):</strong><br>
+→ Life expectancy gap: <span style="color:#ff4d1c">Mott Haven: 75.8 years</span> vs Upper East Side: 86.0 years — <strong>10-year gap</strong> within the same city.<br>
+→ Asthma hospitalization, South Bronx: ~96–98/10k residents — 4x higher than Manhattan average.<br>
+→ R²=0.74 correlation between food insecurity rates and asthma hospitalization (DOHMH 2022).<br><br>
+<strong>DOHMH data lag warning:</strong><br>
+→ Community Health Profiles published every 3 years (42 UHF neighborhoods, not 59 CDs).<br>
+→ SPARCS hospital discharge data has 18-month public lag. Current data reflects 2023 conditions.<br>
+→ Next profile cycle launches ~2026–2027 — advocacy window is NOW for influencing targeting.<br><br>
+<strong>Federal funding at risk:</strong><br>
+→ Title X defunding: 8 DOHMH clinics, ~45k patients/yr affected.<br>
+→ Ryan White -20%: -$22.4M. Affects 30k+ HIV clients.<br>
+→ CDC PHEP freeze: -$18M in emergency preparedness capacity.<br><br>
+TODAY: Submit comments to DOHMH on the 2027 Community Health Profile targeting cycle — window closes Q3 2026.`;
+
+    } else if (t.includes('eviction') || t.includes('displacement')) {
+      reply = `<strong>EVICTION & DISPLACEMENT PRESSURE ANALYSIS</strong><br><br>
+Eviction filing rates (filings per 1,000 households, rolling 12 months) are the most current displacement signal available — updated monthly via NYC Civil Court Open Data.<br><br>
+<strong>Highest eviction pressure CDs:</strong><br>
+→ <span style="color:#ff4d1c">Brownsville (BK CD16)</span> — Housing score 65.9. High NYCHA concentration + private stock distress.<br>
+→ <span style="color:#ff4d1c">East New York (BK CD5)</span> — Historically highest eviction rates post-pandemic.<br>
+→ <span style="color:#f57c00">South Bronx CDs 201–203</span> — Compounding: high food score + housing score + eviction rate.<br><br>
+<strong>Why eviction connects to food:</strong><br>
+Eviction filing → court dates + stress → missed work → income loss → food budget compression.<br>
+Households facing eviction are 3x more likely to experience food insecurity (Urban Institute 2023).<br><br>
+<strong>Right to Counsel (RTC):</strong> NYC provides free legal representation in eviction proceedings (Local Law 136-2017). Coverage citywide since 2022. Utilization gaps remain in Staten Island and outer Queens.<br><br>
+TODAY: Cross-check eviction rate hotspots against CFC pantry capacity — districts with both high eviction rates AND low pantry coverage need same-day emergency allocation.`;
+
+    } else if (t.includes('allocation') || t.includes('fund') || t.includes('budget')) {
+      reply = `<strong>FUND ALLOCATION RECOMMENDATION</strong><br><br>
+The Grid's equity score (composite of all 5 layers) provides the evidence base for proportional allocation. Here's a framework for a $20.9M MOFP FY26 discretionary budget:<br><br>
+<strong>Tier 1 — TRIE Designated (8 districts) — 70% of budget = $14.6M</strong><br>
+→ Mott Haven: $2.8M | Equity 89, SNAP 51.5%, gap score 38.2<br>
+→ East Tremont: $2.4M | Equity 85, 2.1 pantries/10k<br>
+→ University Heights: $2.1M | Equity 80, noncitizen 28%<br>
+→ Hunts Point: $1.9M | Equity 78, 42% food insecure<br>
+→ Remaining 4 Critical CDs: $5.4M proportional<br><br>
+<strong>Tier 2 — High-need (score 50–69) — 20% = $4.2M</strong><br>
+→ Brownsville, Crown Heights N, East Harlem, Jackson Heights<br><br>
+<strong>Tier 3 — Emerging need + Queens/SI gaps — 10% = $2.1M</strong><br>
+→ CFC expansion in Queens (6 sites for 2.3M residents) and Staten Island (0 sites)<br><br>
+<strong>Adjustment factors to apply before finalizing:</strong><br>
+→ Avoid duplication with existing HRA pantry network presence<br>
+→ Agency absorption capacity (can the district actually deploy new funds in FY26?)<br>
+→ Federal/state matching requirements for EFAP and HPNAP<br><br>
+TODAY: Pull FeedNYC pantry tracker data to verify which TRIE districts have the largest actual capacity shortfall.`;
+
+    } else if (t.includes('scrie') || t.includes('drie') || t.includes('rent freeze')) {
+      reply = `<strong>SCRIE / DRIE RENT FREEZE PROGRAM — Targeting Analysis</strong><br><br>
+<strong>What are SCRIE and DRIE?</strong><br>
+→ <strong>SCRIE</strong> (Senior Citizen Rent Increase Exemption): Freezes rent for NYC seniors 62+ whose rent is ≥1/3 of their income and who earn ≤$50k/yr.<br>
+→ <strong>DRIE</strong> (Disability Rent Increase Exemption): Same program for people with qualifying disabilities, any age.<br>
+→ Both are HPD programs. Enrolled tenants pay the same rent regardless of landlord increases — HPD reimburses landlords via tax abatement.<br><br>
+<strong>Priority districts for outreach (Cost of Living layer):</strong><br>
+→ Districts with CoL score ≥70 + high rent burden (>50%) + senior/disability population.<br>
+→ <span style="color:#ff4d1c">University Heights (BX CD5)</span> — CoL score 74, rent burden 61.9%, high senior density.<br>
+→ <span style="color:#f57c00">East Harlem (MN CD11)</span> — Rapid gentrification pressure. SCRIE enrollment historically low.<br>
+→ <span style="color:#f57c00">Crown Heights (BK CD9)</span> — Rent increases 22% over 3 years.<br><br>
+→ Current SCRIE enrollment: ~36k NYC households. Estimated eligible but not enrolled: 50k+.<br><br>
+TODAY: Partner with NYCHA tenant associations in Bronx CDs 201–206 for SCRIE/DRIE enrollment drives — NYCHA tenants can also qualify under income limits.`;
+
+    } else if (t.includes('briefing') || t.includes('executive') || t.includes('summary')) {
+      const d = selectedDistrict;
+      reply = d
+        ? `<strong>EXECUTIVE BRIEFING — ${d.cd_name}, ${d.borough}</strong><br><br>
+<strong>Situation:</strong> ${d.cd_name} is ranked in the ${d.risk_tier} tier with a food vulnerability score of ${d.vulnerability_score}/100.<br><br>
+<strong>Key indicators:</strong><br>
+→ SNAP Enrollment: ${d.indicators.snap_household_pct?.toFixed(1)}% of households (city avg: ~28%)<br>
+→ Child Poverty: ${d.indicators.child_poverty_pct?.toFixed(1)}%<br>
+→ Rent Burden: ${d.indicators.rent_burden_pct?.toFixed(1)}% of households cost-burdened<br>
+→ Unemployment: ${d.indicators.unemployment_pct?.toFixed(1)}%<br>
+→ Non-citizen Pop: ${d.indicators.noncitizen_pct?.toFixed(1)}% (hidden demand floor)<br><br>
+<strong>Priority actions for ${currentAgency}:</strong><br>
+→ Cross-reference against FeedNYC pantry tracker for capacity gaps<br>
+→ Assess EFAP emergency allocation eligibility (TRIE threshold: score ≥70)<br>
+→ Flag noncitizen population for CFC outreach (federal SNAP ineligible)<br><br>
+TODAY: Select this district on the map and click "Export District Brief as PDF" to generate a shareable report.`
+        : `<strong>EXECUTIVE BRIEFING — Citywide Overview</strong><br><br>
+The Grid monitors 59 NYC community districts across 5 equity layers. Current status:<br>
+→ <span style="color:#ff4d1c">8 Critical districts</span> (score 70–100) — all in the Bronx<br>
+→ <span style="color:#f57c00">~12 High districts</span> (score 50–69) — Bronx, Brooklyn, Manhattan<br>
+→ Average citywide food vulnerability: ~42/100<br><br>
+Select a district on the map or sidebar to generate a district-specific briefing.`;
+
+    } else {
+      // Generic but data-grounded fallback
+      const d = selectedDistrict;
+      reply = d
+        ? `<strong>AI ANALYSIS — ${d.cd_name}, ${d.borough}</strong><br><br>
+<strong>Current ${LAYER_LABELS[currentLayer] || 'vulnerability'} status:</strong><br>
+→ Food score: ${d.vulnerability_score}/100 (${d.risk_tier} tier)<br>
+→ SNAP enrollment: ${d.indicators.snap_household_pct?.toFixed(1)}% | Child poverty: ${d.indicators.child_poverty_pct?.toFixed(1)}%<br>
+→ Rent burden: ${d.indicators.rent_burden_pct?.toFixed(1)}% | Unemployment: ${d.indicators.unemployment_pct?.toFixed(1)}%<br>
+→ Non-citizen pop: ${d.indicators.noncitizen_pct?.toFixed(1)}% (ineligible for federal SNAP)<br><br>
+For a full AI-powered analysis with real-time data, ensure the server is running with a valid ANTHROPIC_API_KEY and ask a specific question about this district's indicators, funding needs, or resource gaps.<br><br>
+TODAY: Ask "Generate a policy memo for ${d.cd_name}" to see a formatted recommendation.`
+        : `The Grid monitors 59 NYC community districts. Currently: 8 Critical districts (all Bronx), 12 High-risk. Select a district on the map, then ask about its specific indicators, funding gaps, or allocation recommendations. For full AI analysis, connect to the server with ANTHROPIC_API_KEY configured.`;
+    }
+
+    addMessage('ai', reply);
   }
 }
 

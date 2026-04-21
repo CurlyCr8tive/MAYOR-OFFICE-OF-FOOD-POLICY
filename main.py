@@ -24,6 +24,7 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 # Loaded once at startup; tools query these in-memory structures
 _VULN_DATA    = None
 _LAYER_SCORES = None  # populated from frontend payload per request
+_LIVE_DATA    = None  # populated from data/live_data.json (fetch_live_data.py output)
 
 
 def _load_vulnerability_data():
@@ -44,6 +45,19 @@ def _load_vulnerability_data():
     return _VULN_DATA
 
 
+def _load_live_data():
+    global _LIVE_DATA
+    if _LIVE_DATA is not None:
+        return _LIVE_DATA
+    try:
+        with open(os.path.join("data", "live_data.json")) as f:
+            raw = json.load(f)
+        _LIVE_DATA = raw.get("by_district", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        _LIVE_DATA = {}
+    return _LIVE_DATA
+
+
 # ── SYSTEM PROMPT ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = (
     "You are an AI neighborhood intelligence analyst for The Grid NYC — "
@@ -58,9 +72,13 @@ SYSTEM_PROMPT = (
     "2. If the question is about a specific district, call get_district_data first.\n"
     "3. If comparing districts, call compare_districts.\n"
     "4. If ranking or finding worst districts, call get_top_vulnerable.\n"
-    "5. For housing pipeline questions, use the housing_dev fields in get_district_data.\n"
-    "6. If a question cannot be answered by your tools, say so and point to the "
-    "relevant NYC Open Data source.\n"
+    "5. For housing pipeline questions, use find_housing_pipeline_gaps or the "
+    "housing_dev fields in get_district_data.\n"
+    "6. For eviction or displacement pressure questions, call get_eviction_stress.\n"
+    "7. For SNAP policy, CFC program, NYC budget, Bronx context, or ML research, "
+    "call get_policy_context with the relevant topic.\n"
+    "8. If a question cannot be answered by your tools, say so and name the "
+    "NYC Open Data dataset that would contain the answer.\n"
     "\n"
     "FORMAT RULES:\n"
     "- Use → arrows for recommendations.\n"
@@ -68,8 +86,19 @@ SYSTEM_PROMPT = (
     "- Always end with: TODAY: [one concrete action the planner can take now].\n"
     "- Aim for 300-400 words. Do not truncate findings.\n"
     "\n"
-    "FEDERAL CONTEXT: $186B SNAP cuts incoming; 1.8M NYC SNAP recipients at risk; "
-    "ABAWD work requirements effective March 2026."
+    "POLICY CONTEXT (April 2026):\n"
+    "- SNAP: Congress passed $186B in cuts over 10 years. ABAWD work requirements "
+    "expanded to adults 18-54 effective March 2026 (80 hrs/month). NYC has 1.8M "
+    "SNAP recipients. Avg NYC benefit: $6.10/person/day, proposed cut to ~$4.80.\n"
+    "- CFC (Community Fridge Collaborative): ~50 fridges citywide. Heaviest in Bronx "
+    "CDs 1-4, BK CD16, MN CD11. Queens (6 sites) and Staten Island (0 sites) are gaps.\n"
+    "- NYCHA: 177,500 units housing ~350k residents. $40B capital repair backlog.\n"
+    "- Life expectancy gap: 10 years between Mott Haven (75.8 yrs) and Upper East Side (86.0 yrs).\n"
+    "- The Bronx: highest poverty rate of any US county >1M residents (29.6%). "
+    "Hunts Point is the largest US food distribution hub yet 42% of residents face food insecurity.\n"
+    "- NYC FY2026: MOFP budget ~$62M. Meals on Wheels: $38M. Pantry network: $52M. "
+    "HPD capital plan FY2026-2030: $3.4B.\n"
+    "- Call get_policy_context for full citations and agency-specific implications."
 )
 
 # Per-agency addenda injected alongside system prompt
@@ -223,6 +252,51 @@ TOOLS = [
             }
         }
     },
+    {
+        "name": "get_eviction_stress",
+        "description": (
+            "Rank community districts by eviction filing rate (filings per 1k households) "
+            "using rolling 12-month live data from NYC Civil Court (Open Data). "
+            "Also returns 311 food complaint rates and DOB permit activity. "
+            "Use this for displacement pressure analysis and housing instability questions."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "n": {"type": "integer", "default": 10, "description": "Number of districts to return"},
+                "borough": {"type": "string", "default": "", "description": "Optional borough filter"},
+                "sort_by": {
+                    "type": "string",
+                    "default": "eviction",
+                    "description": "eviction | food_complaints | dob_permits"
+                }
+            }
+        }
+    },
+    {
+        "name": "get_policy_context",
+        "description": (
+            "Returns curated policy and research context. Topics: "
+            "snap (federal SNAP cuts + ABAWD 2026 changes), "
+            "cfc (Community Fridge Collaborative network + gaps), "
+            "housing (evictions, NYCHA, CLTs, HPD thresholds), "
+            "health (life expectancy gap, asthma, WIC, DOHMH metrics), "
+            "bronx (Bronx-specific disparities and key organizations), "
+            "budget (NYC FY2026 food and housing budget figures), "
+            "ml (ML research papers for predictive vulnerability modeling), "
+            "all (everything). Always call this before making policy recommendations."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "default": "all",
+                    "description": "snap | cfc | housing | health | bronx | budget | ml | all"
+                }
+            }
+        }
+    },
 ]
 
 
@@ -280,7 +354,7 @@ def _find_district(query, vuln, layer_scores):
     }
 
 
-def execute_tool(name, inputs, vuln, layer_scores):
+def execute_tool(name, inputs, vuln, layer_scores, live_data=None):
     if name == "get_district_data":
         d = _find_district(inputs.get("district_name", ""), vuln, layer_scores)
         if not d:

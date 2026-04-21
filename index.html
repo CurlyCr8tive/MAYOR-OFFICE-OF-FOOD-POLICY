@@ -305,6 +305,84 @@ html, body {
 .borough-btn:hover { border-color: var(--accent); color: var(--accent); }
 .borough-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
 
+/* ── LAYER CONTROLS ───────────────────────────────────────── */
+.layer-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(10,10,15,0.92);
+  border: 1px solid var(--border);
+  padding: 10px 10px;
+  backdrop-filter: blur(8px);
+}
+
+.layer-controls-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.layer-btn {
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.layer-btn:hover { border-color: var(--accent); color: var(--accent); }
+.layer-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ── AGENCY LENS CONTROLS ─────────────────────────────────── */
+.agency-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.agency-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-right: 4px;
+  text-transform: uppercase;
+}
+
+.agency-btn {
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.agency-btn:hover { border-color: var(--accent); color: var(--accent); }
+.agency-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
 /* ── CENTER PANEL ─────────────────────────────────────────── */
 #center {
   display: grid;
@@ -957,6 +1035,13 @@ html, body {
         LIVE DATA
       </div>
       <div>MAYOR'S OFFICE OF FOOD POLICY</div>
+      <div class="agency-controls">
+        <span class="agency-label">LENS</span>
+        <button type="button" class="agency-btn active" id="agency-MOFP"  onclick="setAgency('MOFP',this)">MOFP</button>
+        <button type="button" class="agency-btn"        id="agency-HPD"   onclick="setAgency('HPD',this)">HPD</button>
+        <button type="button" class="agency-btn"        id="agency-DOHMH" onclick="setAgency('DOHMH',this)">DOHMH</button>
+        <button type="button" class="agency-btn"        id="agency-DSS"   onclick="setAgency('DSS',this)">DSS</button>
+      </div>
       <div id="clock">--:-- --</div>
     </div>
   </header>
@@ -1007,12 +1092,22 @@ html, body {
         <div class="map-header">NYC · 59 COMMUNITY DISTRICTS · VULNERABILITY MAP</div>
         <div class="map-timestamp" id="map-timestamp">Updated: Loading...</div>
         <div id="map"></div>
+        <div class="layer-controls">
+          <div class="layer-controls-label">DATA LAYER</div>
+          <button type="button" class="layer-btn active" id="layer-food"          onclick="setLayer('food',this)">Food Vulnerability</button>
+          <button type="button" class="layer-btn"        id="layer-housing"        onclick="setLayer('housing',this)">Housing Stability</button>
+          <button type="button" class="layer-btn"        id="layer-health"         onclick="setLayer('health',this)">Health Burden</button>
+          <button type="button" class="layer-btn"        id="layer-cost_of_living" onclick="setLayer('cost_of_living',this)">Cost of Living</button>
+          <button type="button" class="layer-btn"        id="layer-economic"       onclick="setLayer('economic',this)">Economic Stress</button>
+          <button type="button" class="layer-btn"        id="layer-equity"         onclick="setLayer('equity',this)">Equity Score</button>
+        </div>
+
         <div class="map-legend">
           <div class="legend-title">RISK TIER</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f"></div>Critical</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div>High</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#fbc02d"></div>Moderate</div>
-          <div class="legend-item"><div class="legend-swatch" style="background:#388e3c"></div>Lower</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:#d32f2f"></div>Critical (70–100)</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div>High (50–69)</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:#fbc02d"></div>Moderate (30–49)</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:#388e3c"></div>Lower (0–29)</div>
           <div class="legend-item"><div class="legend-dot-marker"></div>Food Pantry</div>
         </div>
       </div>
@@ -1046,8 +1141,8 @@ html, body {
         <div class="ai-title">
           <div class="ai-icon">⚡</div>
           <div>
-            <div class="ai-name">FOOD POLICY AI ASSISTANT</div>
-            <div class="ai-subtitle">Powered by Claude · NYC Mayor's Office</div>
+            <div class="ai-name" id="ai-agency-label">MOFP AI ASSISTANT</div>
+            <div class="ai-subtitle">Powered by Claude · The Grid NYC</div>
           </div>
         </div>
       </div>
@@ -1268,6 +1363,74 @@ let currentFilter    = 'All';
 let currentFormat    = 'Memo';
 let currentLayer     = 'food';
 let currentAgency    = 'MOFP';
+let geoLayer         = null;  // stored so setLayer() can re-style the map
+
+const LAYER_LABELS = {
+  food:          'FOOD VULNERABILITY',
+  housing:       'HOUSING STABILITY',
+  health:        'HEALTH BURDEN',
+  cost_of_living:'COST OF LIVING',
+  economic:      'ECONOMIC STRESS',
+  equity:        'EQUITY SCORE',
+};
+
+const AGENCY_LABELS = {
+  MOFP:  'MOFP AI ASSISTANT',
+  HPD:   'HPD AI ASSISTANT',
+  DOHMH: 'DOHMH AI ASSISTANT',
+  DSS:   'DSS AI ASSISTANT',
+};
+
+function getLayerScore(fips) {
+  if (currentLayer === 'food') {
+    const d = getDistrictData(fips);
+    return d ? d.vulnerability_score : 0;
+  }
+  if (currentLayer === 'equity') {
+    const d  = getDistrictData(fips);
+    const ls = LAYER_SCORES[fips] || {};
+    const food = d ? d.vulnerability_score : 50;
+    return Math.round((food + (ls.housing||50) + (ls.cost_of_living||50) + (ls.health||50) + (ls.economic||50)) / 5);
+  }
+  const ls = LAYER_SCORES[fips] || {};
+  return ls[currentLayer] || 0;
+}
+
+function getLayerColor(fips) {
+  const score = getLayerScore(fips);
+  if (score >= 70) return '#d32f2f';
+  if (score >= 50) return '#f57c00';
+  if (score >= 30) return '#fbc02d';
+  return '#388e3c';
+}
+
+function setLayer(layer, btn) {
+  currentLayer = layer;
+  document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // update map header label
+  const hdr = document.querySelector('.map-header');
+  if (hdr) hdr.textContent = 'NYC · 59 COMMUNITY DISTRICTS · ' + (LAYER_LABELS[layer] || layer.toUpperCase());
+  // re-color all map polygons
+  if (geoLayer) {
+    geoLayer.eachLayer(l => {
+      if (l.feature) {
+        const fips = l.feature.properties.BoroCD || l.feature.properties.boro_cd || l.feature.properties.BORO_CD;
+        l.setStyle({ fillColor: getLayerColor(String(fips)) });
+      }
+    });
+  }
+  // re-render district list sorted by active layer
+  renderDistrictList();
+}
+
+function setAgency(agency, btn) {
+  currentAgency = agency;
+  document.querySelectorAll('.agency-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const label = document.getElementById('ai-agency-label');
+  if (label) label.textContent = AGENCY_LABELS[agency] || agency + ' AI ASSISTANT';
+}
 let map;
 
 // ── FORMAT SELECTOR ────────────────────────────────────────────────────────────
@@ -1312,15 +1475,20 @@ document.getElementById('map-timestamp').textContent =
 function renderDistrictList(filter = 'All', searchQuery = '') {
   const list = document.getElementById('district-list');
   list.innerHTML = '';
-  const filtered = DISTRICTS.filter(d => {
+  let filtered = DISTRICTS.filter(d => {
     const matchBorough = filter === 'All' || d.borough === filter;
     const matchSearch  = d.cd_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          d.borough.toLowerCase().includes(searchQuery.toLowerCase());
     return matchBorough && matchSearch;
   });
 
+  // Sort by the active layer score (highest stress first)
+  filtered = filtered.slice().sort((a, b) => getLayerScore(b.fips) - getLayerScore(a.fips));
+
   filtered.forEach((d, i) => {
-    const item = document.createElement('div');
+    const score = getLayerScore(d.fips);
+    const color = getLayerColor(d.fips);
+    const item  = document.createElement('div');
     item.className = 'district-item' + (selectedDistrict?.fips === d.fips ? ' active' : '');
     item.style.animationDelay = `${i * 0.03}s`;
     item.innerHTML = `
@@ -1332,7 +1500,7 @@ function renderDistrictList(filter = 'All', searchQuery = '') {
         </div>
       </div>
       <div class="district-right">
-        <span class="district-score" style="color:${d.color}">${d.vulnerability_score}</span>
+        <span class="district-score" style="color:${color}">${score}</span>
         <span class="risk-badge badge-${d.risk_tier}">${d.risk_tier.toUpperCase()}</span>
       </div>
     `;
@@ -1356,6 +1524,10 @@ document.getElementById('search-input').addEventListener('input', e => {
 });
 
 // ── DISTRICT DETAIL ───────────────────────────────────────────────────────────
+function scoreColor(s) {
+  return s >= 70 ? '#d32f2f' : s >= 50 ? '#f57c00' : s >= 30 ? '#fbc02d' : '#388e3c';
+}
+
 function selectDistrict(d) {
   selectedDistrict = d;
   renderDistrictList(currentFilter, document.getElementById('search-input').value);
@@ -1364,6 +1536,44 @@ function selectDistrict(d) {
 
   const barsContainer = document.getElementById('detail-bars');
   barsContainer.innerHTML = '';
+
+  // ── Layer score cards ────────────────────────────────────────────────────────
+  const ls  = LAYER_SCORES[d.fips] || {};
+  const raw = ls._raw || {};
+  const food  = d.vulnerability_score;
+  const house = ls.housing       || 0;
+  const col   = ls.cost_of_living|| 0;
+  const hlth  = ls.health        || 0;
+  const econ  = ls.economic      || 0;
+  const eq    = Math.round((food + house + col + hlth + econ) / 5);
+
+  const scoreRow = document.createElement('div');
+  scoreRow.style.cssText = 'display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap';
+  [
+    { label:'Food',    val: food,  key:'food' },
+    { label:'Housing', val: house, key:'housing' },
+    { label:'Health',  val: hlth,  key:'health' },
+    { label:'CoL',     val: col,   key:'cost_of_living' },
+    { label:'Economic',val: econ,  key:'economic' },
+    { label:'EQUITY',  val: eq,    key:'equity' },
+  ].forEach(({ label, val, key }) => {
+    const c = scoreColor(val);
+    const isActive = currentLayer === key;
+    scoreRow.innerHTML += `
+      <div style="flex:1;min-width:50px;background:var(--bg-surface);
+                  border:1px solid ${isActive ? c : 'var(--border)'};
+                  padding:6px 5px;text-align:center;cursor:pointer"
+           onclick="setLayer('${key}', document.getElementById('layer-${key}'))">
+        <div style="font-family:var(--font-display);font-size:18px;color:${c};line-height:1">${val}</div>
+        <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:2px">${label}</div>
+      </div>`;
+  });
+  barsContainer.appendChild(scoreRow);
+
+  // ── Food vulnerability indicators ────────────────────────────────────────────
+  const foodSection = document.createElement('div');
+  foodSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">FOOD VULNERABILITY INDICATORS</div>';
+  barsContainer.appendChild(foodSection);
 
   INDICATOR_CONFIG.forEach(cfg => {
     const val = d.indicators[cfg.key] || 0;
@@ -1387,70 +1597,35 @@ function selectDistrict(d) {
     });
   });
 
+  // ── Raw indicators ───────────────────────────────────────────────────────────
+  if (raw.hpd_per_1k !== undefined) {
+    const stallColor = (raw.pipeline_stall_rate||0) > 60 ? '#d32f2f' :
+                       (raw.pipeline_stall_rate||0) > 30 ? '#f57c00' : '#388e3c';
+    const rawPanel = document.createElement('div');
+    rawPanel.innerHTML = `
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">RAW INDICATORS</div>
+        ${[
+          ['HPD Violations/1k HH',  raw.hpd_per_1k,                         '/1k'],
+          ['Life Expectancy',        raw.life_exp,                            ' yrs'],
+          ['Asthma Rate/10k',        raw.asthma,                              '/10k'],
+          ['Median Rent',            raw.rent ? '$'+raw.rent+'/mo' : '—',     ''],
+          ['Median Income',          raw.income_k ? '$'+raw.income_k+'k' : '—',''],
+          ['Completions 2020–24',    raw.completions_5yr,                     ' units'],
+          ['Pipeline Stall Rate',    raw.pipeline_stall_rate != null ? raw.pipeline_stall_rate+'%' : '—', ''],
+        ].map(([label, val, suffix]) => `
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
+            <span style="color:var(--text-secondary)">${label}</span>
+            <span style="color:${label.includes('Stall') ? stallColor : 'var(--text-primary)'}">${val}${typeof val === 'number' ? suffix : ''}</span>
+          </div>`).join('')}
+      </div>`;
+    barsContainer.appendChild(rawPanel);
+  }
+
   // Show trend chart
   document.getElementById('trend-area').style.display = 'block';
   drawTrendChart(d);
-// Housing panel
-  const existingHousing = document.getElementById('housing-panel');
-  if (existingHousing) existingHousing.remove();
-
-  if (d.housing) {
-    const h = d.housing;
-    const stallColor = h.stall_rate_pct > 60 ? '#d32f2f' :
-                       h.stall_rate_pct > 30 ? '#f57c00' : '#388e3c';
-    const prodColor  = h.production_rate_pct < 2 ? '#d32f2f' :
-                       h.production_rate_pct < 5 ? '#f57c00' : '#388e3c';
-
-    const panel = document.createElement('div');
-    panel.id = 'housing-panel';
-    panel.innerHTML = `
-      <div style="margin-top:14px;border-top:1px solid #1e1e32;padding-top:12px">
-        <div style="font-size:9px;letter-spacing:2px;color:#44445a;
-                    margin-bottom:10px">HOUSING DEVELOPMENT</div>
-
-        <div style="display:flex;justify-content:space-between;
-                    font-size:11px;margin-bottom:7px">
-          <span style="color:#8888aa">Housing Stock (2020)</span>
-          <span style="color:#e8e4d9">
-            ${h.total_units_2020.toLocaleString()} units
-          </span>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;
-                    font-size:11px;margin-bottom:7px">
-          <span style="color:#8888aa">Completed 2024</span>
-          <span style="color:#e8e4d9">
-            ${h.completions_2024.toLocaleString()} units
-          </span>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;
-                    font-size:11px;margin-bottom:7px">
-          <span style="color:#8888aa">3-Year Production</span>
-          <span style="color:${prodColor}">
-            ${h.completions_3yr.toLocaleString()} (${h.production_rate_pct}%)
-          </span>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;
-                    font-size:11px;margin-bottom:7px">
-          <span style="color:#8888aa">Pipeline (Permitted)</span>
-          <span style="color:#e8e4d9">
-            ${h.units_permitted.toLocaleString()} units
-          </span>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;
-                    font-size:11px;margin-bottom:7px">
-          <span style="color:#8888aa">Stalled Projects</span>
-          <span style="color:${stallColor}">
-            ${h.stalled_units.toLocaleString()} (${h.stall_rate_pct}% stall rate)
-          </span>
-        </div>
-      </div>
-    `;
-    barsContainer.appendChild(panel);
-  }}
+}
 
 // ── TREND CHART ───────────────────────────────────────────────────────────────
 function drawTrendChart(district) {
@@ -1582,12 +1757,12 @@ function loadCommunityDistrictGeoJSON() {
   fetch('/community_districts.geojson')
     .then(r => r.json())
     .then(geojson => {
-      L.geoJSON(geojson, {
+      geoLayer = L.geoJSON(geojson, {
         style: feature => {
-          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+          const fips = String(feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD);
           const district = getDistrictData(fips);
           return {
-            fillColor:   district ? district.color : getFallbackColor(fips),
+            fillColor:   district ? getLayerColor(fips) : '#222',
             fillOpacity: district ? 0.75 : 0.2,
             color:       '#1e1e32',
             weight:      1,
@@ -1595,20 +1770,23 @@ function loadCommunityDistrictGeoJSON() {
           };
         },
         onEachFeature: (feature, layer) => {
-          const fips = feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD;
+          const fips = String(feature.properties.BoroCD || feature.properties.boro_cd || feature.properties.BORO_CD);
           const district = getDistrictData(fips);
 
           if (district) {
-            const tooltipContent = `
-              <strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
-              Score: <span style="color:#ff4d1c;font-weight:500">${district.vulnerability_score} ${district.risk_tier.toUpperCase()}</span><br>
-              SNAP Enrollment: ${district.indicators.snap_household_pct.toFixed(1)}%<br>
-              Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
-              Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}%<br>
-              Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%<br>
-              Non-citizen Pop: ${district.indicators.noncitizen_pct.toFixed(1)}%
-            `;
-            layer.bindTooltip(tooltipContent, { sticky: true, direction: 'top' });
+            const buildTooltip = () => {
+              const score = getLayerScore(fips);
+              const layerLabel = LAYER_LABELS[currentLayer] || currentLayer;
+              return `
+                <strong>${district.cd_name.toUpperCase()} — ${district.borough}</strong><br>
+                <span style="color:#ff4d1c;font-weight:500">${layerLabel}: ${score}</span><br>
+                SNAP: ${district.indicators.snap_household_pct.toFixed(1)}% &nbsp;|&nbsp;
+                Child Poverty: ${district.indicators.child_poverty_pct.toFixed(1)}%<br>
+                Rent Burden: ${district.indicators.rent_burden_pct.toFixed(1)}% &nbsp;|&nbsp;
+                Unemployment: ${district.indicators.unemployment_pct.toFixed(1)}%
+              `;
+            };
+            layer.bindTooltip(buildTooltip, { sticky: true, direction: 'top' });
 
             layer.on({
               mouseover: e => {

@@ -1469,17 +1469,88 @@ const AI_CONFIGS = {
   },
 };
 
+// ── AGENCY-SPECIFIC QUICK ACTIONS ──────────────────────────────────────────────
+const AGENCY_ACTIONS = {
+  MOFP: {
+    placeholder: 'Ask about food gaps, SNAP, pantry allocation, supply analysis...',
+    chips: [
+      ['Food supply gap',    'Run the food supply gap analysis for the top 10 most vulnerable districts'],
+      ['SNAP cuts impact',   'Which neighborhoods will be hit hardest by the $186B federal SNAP cuts?'],
+      ['EFAP allocation',    'Recommend EFAP emergency food fund allocation across TRIE-designated districts'],
+      ['Noncitizen demand',  'Which districts have the highest hidden demand from noncitizen households ineligible for SNAP?'],
+    ],
+    actions: [
+      ['📋', 'Gap Analysis',  'Generate a food supply vs demand gap analysis for the top 5 TRIE districts'],
+      ['📊', 'SNAP Impact',   'Predict the impact of SNAP work requirement expansion on each borough'],
+      ['🗺️', 'Pantry Gaps',  'Find neighborhoods with the worst food pantry gaps relative to food insecure population'],
+      ['💰', 'FY26 Budget',   'Explain the $20.9M FY26 MOFP budget cliff and recommend reallocation strategy'],
+    ],
+  },
+  HPD: {
+    placeholder: 'Ask about housing pipeline, HPD violations, displacement, ULURP...',
+    chips: [
+      ['Pipeline stall rates',  'Which districts have the worst housing development pipeline stall rates?'],
+      ['HPD Class C violations','Show the districts with the most dangerous HPD Class C violations'],
+      ['ULURP timing',          'Which districts have projects already in the ULURP pipeline for fast approval?'],
+      ['Federal cut exposure',  'How will HOME elimination and CDBG cuts affect HPD capital program by neighborhood?'],
+    ],
+    actions: [
+      ['🏗️', 'Pipeline Gaps', 'Find the top 5 districts where housing pipeline is most blocked and recommend intervention'],
+      ['⚠️', 'HPD Hotspots',  'Identify top HPD Class C violation districts and model food cascade impact'],
+      ['📋', 'Consolidated Plan', 'Generate an HPD Consolidated Plan priority memo for the top 5 housing-stressed districts'],
+      ['💰', 'Capital Allocation', 'Recommend HPD capital fund allocation across the 10 most housing-stressed districts'],
+    ],
+  },
+  DOHMH: {
+    placeholder: 'Ask about health burden, life expectancy, UHF neighborhoods, SPARCS data...',
+    chips: [
+      ['Life expectancy gap',  'Analyze the 10-year life expectancy gap between Mott Haven and Upper East Side'],
+      ['Asthma hotspots',      'Which UHF neighborhoods have the worst asthma hospitalization rates?'],
+      ['SPARCS data lag',      'Which health conditions are underreported due to the 18-month SPARCS data lag?'],
+      ['Federal funding risk', 'How will Title X defunding and Ryan White cuts affect DOHMH programming by district?'],
+    ],
+    actions: [
+      ['❤️', 'Health Memo',   'Generate a health burden memo for the top 5 DOHMH priority districts'],
+      ['🫁', 'Asthma Report', 'Identify asthma hotspots and recommend DOHMH Community Health Profile interventions'],
+      ['📊', 'UHF Mapping',   'Map The Grid community district data to DOHMH UHF neighborhood boundaries'],
+      ['💊', 'DOHMH Budget',  'Analyze DOHMH federal funding risk from Title X, Ryan White, and CDC PHEP cuts'],
+    ],
+  },
+  DSS: {
+    placeholder: 'Ask about SNAP benefits, emergency food, cash assistance, HRA services...',
+    chips: [
+      ['ABAWD expansion',    'Which districts have the most adults 18-54 at risk from SNAP work requirement expansion?'],
+      ['Case surge forecast', 'Forecast DSS case management surge from SNAP work requirements by borough'],
+      ['Emergency food',     'Which HRA emergency food sites are at capacity and need expansion?'],
+      ['TANF exposure',      'Analyze the impact of proposed TANF reductions on DSS caseload by district'],
+    ],
+    actions: [
+      ['📋', 'SNAP Memo',    'Generate a SNAP eligibility impact memo for the top 5 most affected districts'],
+      ['📊', 'Case Surge',   'Forecast DSS case management surge by borough from SNAP ABAWD expansion'],
+      ['🗺️', 'HRA Gaps',    'Identify HRA office and emergency food access gaps relative to need'],
+      ['💰', 'Budget Risk',  'Analyze DSS federal funding exposure: SNAP, TANF, CCDF, FEMA cuts combined'],
+    ],
+  },
+};
+
 function updateAIActions() {
-  const cfg = AI_CONFIGS[currentLayer] || AI_CONFIGS.food;
+  // Agency configs take priority when an agency is selected; fall back to layer configs
+  const agencyCfg = AGENCY_ACTIONS[currentAgency];
+  const layerCfg  = AI_CONFIGS[currentLayer] || AI_CONFIGS.food;
+
+  // Merge: use agency chips when available, else layer chips
+  const chips   = agencyCfg ? agencyCfg.chips   : layerCfg.chips;
+  const actions = agencyCfg ? agencyCfg.actions  : layerCfg.actions;
+  const placeholder = agencyCfg ? agencyCfg.placeholder : layerCfg.placeholder;
 
   // Update chat placeholder
   const input = document.getElementById('chat-input');
-  if (input) input.placeholder = cfg.placeholder;
+  if (input) input.placeholder = placeholder;
 
   // Update chip-row
   const chipRow = document.getElementById('chip-row');
   if (chipRow) {
-    chipRow.innerHTML = cfg.chips.map(([label, prompt]) =>
+    chipRow.innerHTML = chips.map(([label, prompt]) =>
       `<button type="button" class="chip" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${label}</button>`
     ).join('');
   }
@@ -1487,14 +1558,18 @@ function updateAIActions() {
   // Update qa-grid
   const qaGrid = document.getElementById('qa-grid');
   if (qaGrid) {
-    qaGrid.innerHTML = cfg.actions.map(([icon, label, prompt]) =>
+    qaGrid.innerHTML = actions.map(([icon, label, prompt]) =>
       `<button type="button" class="qa-btn" onclick="sendChip('${prompt.replace(/'/g,"\\'")}'">${icon} ${label}</button>`
     ).join('');
   }
 
-  // Update qa section title with agency context
+  // Title: only show agency prefix if a non-default agency is explicitly active
   const qaTitle = document.getElementById('qa-title');
-  if (qaTitle) qaTitle.textContent = `${currentAgency} QUICK ACTIONS · ${LAYER_LABELS[currentLayer] || currentLayer.toUpperCase()}`;
+  if (qaTitle) {
+    qaTitle.textContent = agencyCfg
+      ? `${currentAgency} QUICK ACTIONS`
+      : 'AI QUICK ACTIONS';
+  }
 }
 
 const PANTRIES = [

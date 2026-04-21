@@ -909,6 +909,50 @@ def _dispatch(name: str, args: dict):
             }
         }
 
+        POLICY_KB["hpd_process"] = {
+            "title": "HPD Investment Process — Consolidated Plan + ULURP",
+            "facts": [
+                "HUD requires a 5-year Consolidated Plan. Annual Action Plans identify priority neighborhoods.",
+                "Investment driven by: ULURP review, community board input, displacement risk index, Where We Live NYC equity framework.",
+                "ULURP: 12-18 months. Community board 60 days → Borough President 30 days → City Planning 60 days → Council 50 days.",
+                "Capital planning cycle: 10 years. Operating budgets: annual.",
+                "Where We Live NYC maps historical disinvestment, segregation, displacement risk. Priority: Bronx 201-206, BK 305/316, QN 403/412.",
+                "CDBG national objectives: LMI benefit (51%+ low-mod income), slum/blight, urgent need. Most Bronx CDs qualify.",
+                "Federal risk: HOME elimination = $28M/yr gone. CDBG -30% = $24M/yr less.",
+            ],
+        }
+        POLICY_KB["dohmh_data"] = {
+            "title": "DOHMH Data Cycles, UHF Geography, SPARCS Lag",
+            "facts": [
+                "Community Health Profiles: every 3 years for 42 UHF neighborhoods (not aligned with 59 CDs).",
+                "SPARCS hospital discharge data: 18-month public lag. Current public data = 2023 discharges.",
+                "Community Health Survey (CHS): annual, ~8k NYC adults. Results published 6-12 months post-collection.",
+                "Budget annual but program geography rarely changes between 3-year cycles. Advocacy window = year before new profile cycle (next ~2026-2027).",
+                "Federal risk: Title X defunding impacts 8 DOHMH clinics (~45k patients/yr). CDC PHEP cut = -$18M.",
+            ],
+        }
+        POLICY_KB["parks"] = {
+            "title": "NYC Parks — Community Parks Initiative Equity Index",
+            "facts": [
+                "CPI equity index: park acreage per capita + poverty rate + population density.",
+                "Capital: 10-year cycle. Operating: annual. Equity index NOT updated between planning cycles.",
+                "Federal LWCF: ~$15M/yr NYC. Proposed freeze = full cut.",
+                "NYS EPF: $400M/yr statewide; NYC ~18% (~$72M/yr).",
+                "Lowest park access: Bronx CD 201/202 (0.7 acres/1k residents), BK CD 303/316.",
+                "Operating gap: wealthy CDs with conservancies outspend city-funded CDs 3:1.",
+            ],
+        }
+        POLICY_KB["nyc_opportunity"] = {
+            "title": "NYC Opportunity — Cross-Agency + Supply Gap Analysis",
+            "facts": [
+                "Produces NYC Poverty Measure and annual Food Supply Gap Analysis.",
+                "Uses ACS 5-year estimates: data 2-3 years old at publication, 4-5 years old by end of planning cycle.",
+                "Food Supply Gap: Feeding America demand (Census, 12-18mo old) vs FeedNYC supply. Gap = demand - supply.",
+                "TRIE designation: CDs in top quintile of gap score get priority MOFP/DSS/HRA allocation.",
+                "NYC Poverty Measure 2023: 18.3% overall (vs federal 14.6% — includes housing costs, SNAP, work expenses).",
+            ],
+        }
+
         if topic == "all":
             return {
                 "topics_available": list(POLICY_KB.keys()),

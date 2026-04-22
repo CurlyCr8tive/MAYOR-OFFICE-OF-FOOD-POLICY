@@ -310,8 +310,18 @@ def build_layer_scores():
     hpd_min, hpd_max   = min(hpd_vals), max(hpd_vals)
     le_min, le_max     = min(le_vals), max(le_vals)
     ast_min, ast_max   = min(ast_vals), max(ast_vals)
-    rent_min, rent_max = min(rent_vals), max(rent_vals)
     inc_min, inc_max   = min(inc_vals), max(inc_vals)
+
+    # Cost of living: rent-to-income burden ratio (annual rent / annual income)
+    # This correctly reflects affordability, not absolute price.
+    # Mott Haven: $1,148/mo on $22.4k income = 61.5% burden → HIGH stress
+    # Upper East Side: $4,286/mo on $148.6k income = 34.6% burden → LOWER stress
+    rent_burden_ratios = {
+        fips: (MEDIAN_RENT[fips] * 12) / (MEDIAN_INCOME_K[fips] * 1000)
+        for fips in MEDIAN_RENT if MEDIAN_INCOME_K.get(fips, 0) > 0
+    }
+    burden_vals = list(rent_burden_ratios.values())
+    burden_min, burden_max = min(burden_vals), max(burden_vals)
 
     # Pre-compute housing development stress ranges (after loading CSV)
     # stall_rate = (withdrawn+inactive) / (permitted+withdrawn+inactive) * 100
@@ -362,8 +372,10 @@ def build_layer_scores():
         ast_stress = normalize(ast, ast_min, ast_max)
         health_score = round(le_stress * 0.6 + ast_stress * 0.4)
 
-        # Cost of living: high rent = high stress
-        col_score = normalize(rent, rent_min, rent_max)
+        # Cost of living: rent-to-income burden (not absolute rent)
+        # Districts where rent consumes a higher % of income score higher
+        burden = rent_burden_ratios.get(fips, 0.4)
+        col_score = normalize(burden, burden_min, burden_max)
 
         # Economic stress: low income = high stress; blend with eviction pressure if available
         income_stress = normalize(inc, inc_min, inc_max, invert=True)
@@ -450,7 +462,9 @@ def main():
         print(f"\n  {name} ({fips}):")
         print(f"    housing={s['housing']} (HPD {r['hpd_violations_per_1k']}/1k HH, stall {r['pipeline_stall_rate']}%, {r['housing_completions_per1k']}/1k units built)")
         print(f"    health={s['health']} (LE {r['life_expectancy']} yrs, asthma {r['asthma_per_10k']}/10k)")
-        print(f"    cost_of_living={s['cost_of_living']} (rent ${r['median_rent']}/mo)")
+        inc_k = MEDIAN_INCOME_K.get(fips, 1)
+        burden_pct = round((MEDIAN_RENT.get(fips, 0) * 12) / (inc_k * 1000) * 100, 1)
+        print(f"    cost_of_living={s['cost_of_living']} (rent ${r['median_rent']}/mo, burden {burden_pct}% of income)")
         print(f"    economic={s['economic']} (income ${r['median_income_k']}k)")
         print(f"    pipeline: {r['pipeline_filed']} filed → {r['pipeline_permitted']} permitted, {r['pipeline_withdrawn']} withdrawn, {r['pipeline_inactive']} inactive")
 
